@@ -15,6 +15,7 @@ export type ShortcutAction =
   | 'focusTabSearch'
   | 'sidebarNewQuery'
   | 'sidebarViewTableDdl'
+  | 'sidebarDesignTable'
   | 'switchToNextTab'
   | 'switchToPreviousTab'
   | 'closeCurrentTab'
@@ -117,6 +118,7 @@ export const SHORTCUT_ACTION_ORDER: ShortcutAction[] = [
   'sendAIChatMessage',
   'focusSidebarSearch',
   'focusTabSearch',
+  'sidebarDesignTable',
   'sidebarNewQuery',
   'sidebarViewTableDdl',
   'switchToNextTab',
@@ -220,6 +222,11 @@ const SHORTCUT_ACTION_META_DEFINITIONS: Record<ShortcutAction, ShortcutActionMet
   sidebarViewTableDdl: {
     labelKey: 'app.shortcuts.action.sidebarViewTableDdl.label',
     descriptionKey: 'app.shortcuts.action.sidebarViewTableDdl.description',
+    scope: 'sidebar',
+  },
+  sidebarDesignTable: {
+    labelKey: 'app.shortcuts.action.sidebarDesignTable.label',
+    descriptionKey: 'app.shortcuts.action.sidebarDesignTable.description',
     scope: 'sidebar',
   },
   switchToNextTab: {
@@ -343,6 +350,10 @@ export const DEFAULT_SHORTCUT_OPTIONS: ShortcutOptions = {
   sidebarViewTableDdl: {
     mac: { combo: 'Ctrl+Q', enabled: true },
     windows: { combo: 'Ctrl+Q', enabled: true },
+  },
+  sidebarDesignTable: {
+    mac: { combo: 'Meta+D', enabled: true },
+    windows: { combo: 'Ctrl+D', enabled: true },
   },
   switchToNextTab: {
     mac: { combo: 'Ctrl+Tab', enabled: true },

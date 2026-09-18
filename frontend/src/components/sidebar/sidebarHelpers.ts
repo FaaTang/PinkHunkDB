@@ -519,6 +519,10 @@ export const isSidebarTreeDdlShortcutNode = (
   node: Pick<SidebarNodeLike, 'type'> | null | undefined,
 ): boolean => node?.type === 'table';
 
+export const isSidebarTreeDesignShortcutNode = (
+  node: Pick<SidebarNodeLike, 'type'> | null | undefined,
+): boolean => node?.type === 'table';
+
 export const isSidebarTreeNewQueryShortcutNode = (
   node: Pick<SidebarNodeLike, 'type'> | null | undefined,
 ): boolean => (

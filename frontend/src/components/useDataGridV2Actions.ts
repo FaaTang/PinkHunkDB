@@ -39,6 +39,7 @@ export const useDataGridV2Actions = (ctx: DataGridV2ActionsContext) => {
     buildWhereSQL,
     cellContextMenu,
     cellEditMode,
+    canModifyData,
     closeCellEditMode,
     columnMetaMap,
     columnMetaMapByLowerName,
@@ -72,10 +73,12 @@ export const useDataGridV2Actions = (ctx: DataGridV2ActionsContext) => {
     hasExplicitSort,
     hasFilteredExportSql,
     isQueryResultExport,
+    isTableSurfaceActive,
     mergedDisplayData,
     modal,
     navigator,
     objectType,
+    openCurrentViewRowEditor,
     pagination,
     pickDataGridOutputRows,
     pickRowsForClipboard,
@@ -257,7 +260,7 @@ const handleV2ColumnHeaderContextMenuAction = useCallback((action: V2ColumnHeade
   }, [selectedCells, mergedDisplayData, displayColumnNames, copyToClipboard, translateDataGrid]);
 
   useEffect(() => {
-      if (!cellEditMode) return;
+      if (!isTableSurfaceActive) return;
 
       const onKeyDown = (event: KeyboardEvent) => {
           const activeElement = document.activeElement as HTMLElement | null;
@@ -265,8 +268,22 @@ const handleV2ColumnHeaderContextMenuAction = useCallback((action: V2ColumnHeade
           if (tagName === 'input' || tagName === 'textarea' || activeElement?.isContentEditable) {
               return;
           }
+          if (rootRef.current && activeElement) {
+              const focusOutsideGrid = activeElement !== document.body
+                  && activeElement !== document.documentElement
+                  && !rootRef.current.contains(activeElement);
+              if (focusOutsideGrid && !cellContextMenu.visible) {
+                  return;
+              }
+          }
 
           if (event.key === 'Escape') {
+              if (cellContextMenu.visible) {
+                  event.preventDefault();
+                  setCellContextMenu((prev: any) => ({ ...prev, visible: false }));
+                  return;
+              }
+              if (!cellEditMode) return;
               const activeSelection = currentSelectionRef.current.size > 0 ? currentSelectionRef.current : selectedCells;
               event.preventDefault();
               if (activeSelection.size === 0) {
@@ -277,9 +294,27 @@ const handleV2ColumnHeaderContextMenuAction = useCallback((action: V2ColumnHeade
               return;
           }
 
+          if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+              if (!canModifyData) return;
+              event.preventDefault();
+              if (cellContextMenu.visible && cellContextMenu.kind === 'cell' && cellContextMenu.record) {
+                  handleOpenContextMenuRowEditor();
+                  return;
+              }
+              openCurrentViewRowEditor();
+              return;
+          }
+
           const isCopy = (event.ctrlKey || event.metaKey) && !event.altKey && String(event.key || '').toLowerCase() === 'c';
           if (!isCopy) return;
 
+          if (cellContextMenu.visible) {
+              event.preventDefault();
+              handleCopyContextMenuFieldName();
+              return;
+          }
+
+          if (!cellEditMode) return;
           const activeSelection = currentSelectionRef.current.size > 0 ? currentSelectionRef.current : selectedCells;
           if (activeSelection.size === 0) return;
 
@@ -289,7 +324,23 @@ const handleV2ColumnHeaderContextMenuAction = useCallback((action: V2ColumnHeade
 
       window.addEventListener('keydown', onKeyDown);
       return () => window.removeEventListener('keydown', onKeyDown);
-  }, [cellEditMode, selectedCells, handleCopySelectedCellsToClipboard, resetCellSelection, closeCellEditMode]);
+  }, [
+      canModifyData,
+      cellContextMenu.kind,
+      cellContextMenu.record,
+      cellContextMenu.visible,
+      cellEditMode,
+      closeCellEditMode,
+      handleCopyContextMenuFieldName,
+      handleCopySelectedCellsToClipboard,
+      handleOpenContextMenuRowEditor,
+      isTableSurfaceActive,
+      openCurrentViewRowEditor,
+      resetCellSelection,
+      rootRef,
+      selectedCells,
+      setCellContextMenu,
+  ]);
 
   useEffect(() => {
       if (!cellEditMode) return;

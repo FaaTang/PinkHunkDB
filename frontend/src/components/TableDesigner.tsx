@@ -481,7 +481,8 @@ const TableDesigner: React.FC<{ tab: TabData; embedded?: boolean }> = ({ tab, em
   const theme = useStore(state => state.theme);
   const appearance = useStore(state => state.appearance);
   const i18nLanguage = useTableDesignerI18nLanguage();
-  const darkMode = theme === 'dark';  const resizeGuideColor = darkMode ? '#f6c453' : '#1890ff';
+  const darkMode = theme === 'dark';
+  const resizeGuideColor = darkMode ? '#f6c453' : '#1890ff';
   const readOnly = !!tab.readOnly;
   const designerTableTitle = tab.tableName || newTableName || t('table_designer.title.untitled_table', undefined, i18nLanguage);
   const designerDbTitle = tab.dbName || t('table_designer.title.default_database', undefined, i18nLanguage);
@@ -754,14 +755,11 @@ const TableDesigner: React.FC<{ tab: TabData; embedded?: boolean }> = ({ tab, em
           ...(readOnly ? [] : [{
               title: renderDesignerHeaderTitle(t('table_designer.column.actions', undefined, i18nLanguage)),
               key: 'action',
-              width: 92,
+              width: 56,
               className: 'table-designer-action-column',
               onHeaderCell: () => ({ className: 'table-designer-action-column' }),
               render: (_: any, record: EditableColumn) => (
                   <div className="table-designer-action-cell">
-                      <Tooltip title={t('table_designer.tooltip.edit_comment_popup', undefined, i18nLanguage)}>
-                          <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openCommentEditor(record)} />
-                      </Tooltip>
                       <Tooltip title={t('table_designer.action.delete', undefined, i18nLanguage)}>
                           <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteColumn(record._key)} />
                       </Tooltip>
@@ -1274,7 +1272,18 @@ ${selectedTrigger.statement}`;
 
   const handleDeleteColumn = (key: string) => {
       setColumns(prev => prev.filter(c => c._key !== key));
+      setSelectedColumnRowKeys(prev => prev.filter(k => k !== key));
   };
+
+  const handleDeleteSelectedColumns = useCallback(() => {
+      if (selectedColumnRowKeys.length === 0) {
+          message.warning(t('table_designer.message.select_columns_to_delete', undefined, i18nLanguage));
+          return;
+      }
+      const selectedSet = new Set(selectedColumnRowKeys);
+      setColumns(prev => prev.filter(c => !selectedSet.has(c._key)));
+      setSelectedColumnRowKeys([]);
+  }, [i18nLanguage, selectedColumnRowKeys]);
 
   const selectedColumns = useMemo(() => {
       if (selectedColumnRowKeys.length === 0) return [];
@@ -3094,6 +3103,17 @@ END;`;
                     disabled={selectedColumns.length === 0}
                 >
                     {t('table_designer.action.copy_selected_to_new_table', undefined, i18nLanguage)}
+                </Button>
+            )}
+            {!readOnly && (
+                <Button
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={handleDeleteSelectedColumns}
+                    disabled={selectedColumnRowKeys.length === 0}
+                >
+                    {t('table_designer.action.delete_selected_columns', undefined, i18nLanguage)}
                 </Button>
             )}
             <div style={{ flex: 1 }} />

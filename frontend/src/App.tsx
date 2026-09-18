@@ -2851,6 +2851,7 @@ function App() {
                   : t('app.shortcuts.message.modifier_required'));
               return;
           }
+          const capturingScope = SHORTCUT_ACTION_META[capturingShortcutAction].scope || 'global';
           const conflictAction = SHORTCUT_ACTION_ORDER.find((action) => {
               if (action === capturingShortcutAction) {
                   return false;
@@ -2859,7 +2860,15 @@ function App() {
               if (!binding?.enabled) {
                   return false;
               }
-              return normalizeShortcutCombo(binding.combo) === normalizedCombo;
+              if (normalizeShortcutCombo(binding.combo) !== normalizedCombo) {
+                  return false;
+              }
+              const otherScope = SHORTCUT_ACTION_META[action].scope || 'global';
+              // 不同作用域可共用同一组合（例如编辑器 Ctrl+D 与侧栏设计表 Ctrl+D）
+              if (capturingScope !== 'global' && otherScope !== 'global' && capturingScope !== otherScope) {
+                  return false;
+              }
+              return true;
           });
           if (conflictAction) {
               void message.warning(t('app.shortcuts.message.conflict', { action: SHORTCUT_ACTION_META[conflictAction].label }));

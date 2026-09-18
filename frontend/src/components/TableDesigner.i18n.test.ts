@@ -31,6 +31,8 @@ describe('TableDesigner i18n', () => {
     expect(source).toContain("t('table_designer.message.trigger_deleted'");
     expect(source).toContain("t('table_designer.modal.copy_columns_title'");
     expect(source).toContain("t('table_designer.modal.confirm_sql_title'");
+    expect(source).toContain("t('table_designer.action.delete_selected_columns'");
+    expect(source).toContain("t('table_designer.message.select_columns_to_delete'");
   });
 
   it('keeps generated trigger SQL fallbacks raw and locale-stable', () => {

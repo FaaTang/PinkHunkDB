@@ -54,6 +54,7 @@ import {
   isSidebarTreeClearSelectionKeyboardEvent,
   isSidebarShortcutOverlayTarget,
   isSidebarTreeDdlShortcutNode,
+  isSidebarTreeDesignShortcutNode,
   isSidebarTreeNewQueryShortcutNode,
   resolveSidebarNodeDisplayLabel,
   resolveSidebarObjectNameForContext,
@@ -82,6 +83,7 @@ export {
   isSidebarTreeClearSelectionKeyboardEvent,
   isSidebarShortcutOverlayTarget,
   isSidebarTreeDdlShortcutNode,
+  isSidebarTreeDesignShortcutNode,
   isSidebarTreeNewQueryShortcutNode,
   isSidebarTreeMultiSelectMouseEvent,
   isSidebarTreeRangeSelectMouseEvent,
@@ -155,9 +157,10 @@ import { supportsTableTruncateAction } from './tableDataDangerActions';
 import { useAutoFetchVisibility } from '../utils/autoFetchVisibility';
 import FindInDatabaseModal from './FindInDatabaseModal';
 import { buildRpcConnectionConfig } from '../utils/connectionRpcConfig';
-import { resolveDataSourceType } from '../utils/dataSourceCapabilities';
+import { resolveDataSourceType, getDataSourceCapabilities } from '../utils/dataSourceCapabilities';
 import { isConnectionStructureEditRestricted } from '../utils/connectionReadOnly';
 import { noAutoCapInputProps } from '../utils/inputAutoCap';
+import { matchSidebarTreeMenuShortcut } from './sidebar/sidebarTreeMenuShortcuts';
 import {
   resolveSidebarRuntimeDatabase,
 } from '../utils/sidebarMetadata';
@@ -3167,6 +3170,140 @@ const Sidebar: React.FC<{
       return true;
   }, [openSidebarTableDdlModal, resolveSidebarTreeSingleSelectedNode]);
 
+  const triggerSidebarTreeDesignShortcut = useCallback((): boolean => {
+      const node = resolveSidebarTreeSingleSelectedNode();
+      if (!node || !isSidebarTreeDesignShortcutNode(node)) {
+          return false;
+      }
+      openDesign(node, 'columns', false);
+      return true;
+  }, [openDesign, resolveSidebarTreeSingleSelectedNode]);
+
+  const triggerSidebarTreeMenuShortcut = useCallback((event: KeyboardEvent): boolean => {
+      const menuShortcut = matchSidebarTreeMenuShortcut(event);
+      if (!menuShortcut) {
+          return false;
+      }
+      if (!shouldSidebarTreeKeyboardShortcut(event.target, { requireSingleSelection: true })) {
+          return false;
+      }
+      const node = resolveSidebarTreeSingleSelectedNode();
+      if (!node) {
+          return false;
+      }
+      const nodeType = String(node.type || '');
+      const capabilities = getDataSourceCapabilities((node.dataRef as SavedConnection | undefined)?.config);
+
+      switch (menuShortcut) {
+          case 'open-data':
+              if (nodeType === 'table' || nodeType === 'view' || nodeType === 'materialized-view') {
+                  handleV2TableContextMenuAction(node, 'open-data');
+                  return true;
+              }
+              return false;
+          case 'open-new-tab':
+              if (nodeType === 'table' || nodeType === 'view' || nodeType === 'materialized-view') {
+                  handleV2TableContextMenuAction(node, 'open-new-tab');
+                  return true;
+              }
+              return false;
+          case 'rename':
+              if (nodeType === 'table') {
+                  handleV2TableContextMenuAction(node, 'rename-table');
+                  return true;
+              }
+              if (nodeType === 'database' && capabilities.supportsRenameDatabase) {
+                  handleV2DatabaseContextMenuAction(node, 'rename-db');
+                  return true;
+              }
+              if (
+                  nodeType === 'object-group'
+                  && node?.dataRef?.groupKey === 'schema'
+                  && isPostgresSchemaDialect(getMetadataDialect(node.dataRef as SavedConnection))
+                  && String(node?.dataRef?.schemaName || '').trim()
+              ) {
+                  openRenameSchemaModal(node);
+                  return true;
+              }
+              if (nodeType === 'connection') {
+                  handleV2ConnectionContextMenuAction(node, 'edit');
+                  return true;
+              }
+              return false;
+          case 'delete':
+              if (nodeType === 'table') {
+                  handleV2TableContextMenuAction(node, 'drop-table');
+                  return true;
+              }
+              if (nodeType === 'database' && capabilities.supportsDropDatabase) {
+                  handleV2DatabaseContextMenuAction(node, 'drop-db');
+                  return true;
+              }
+              if (
+                  nodeType === 'object-group'
+                  && node?.dataRef?.groupKey === 'schema'
+                  && isPostgresSchemaDialect(getMetadataDialect(node.dataRef as SavedConnection))
+                  && String(node?.dataRef?.schemaName || '').trim()
+              ) {
+                  handleDeleteSchema(node);
+                  return true;
+              }
+              if (nodeType === 'connection') {
+                  handleV2ConnectionContextMenuAction(node, 'delete');
+                  return true;
+              }
+              return false;
+          case 'create':
+              if (nodeType === 'database') {
+                  handleV2DatabaseContextMenuAction(node, 'new-table');
+                  return true;
+              }
+              if (
+                  nodeType === 'object-group'
+                  && node?.dataRef?.groupKey === 'tables'
+              ) {
+                  handleV2TableGroupContextMenuAction(node, 'new-table');
+                  return true;
+              }
+              if (nodeType === 'connection' && capabilities.supportsCreateDatabase) {
+                  handleV2ConnectionContextMenuAction(node, 'new-db');
+                  return true;
+              }
+              return false;
+          case 'refresh':
+              if (nodeType === 'database') {
+                  handleV2DatabaseContextMenuAction(node, 'refresh');
+                  return true;
+              }
+              if (
+                  nodeType === 'object-group'
+                  && node?.dataRef?.groupKey === 'schema'
+                  && String(node?.dataRef?.schemaName || '').trim()
+              ) {
+                  void loadTables(getDatabaseNodeRef(node.dataRef, String(node.dataRef.dbName || '').trim()));
+                  return true;
+              }
+              if (nodeType === 'connection') {
+                  handleV2ConnectionContextMenuAction(node, 'refresh');
+                  return true;
+              }
+              return false;
+          default:
+              return false;
+      }
+  }, [
+      getDatabaseNodeRef,
+      handleDeleteSchema,
+      handleV2ConnectionContextMenuAction,
+      handleV2DatabaseContextMenuAction,
+      handleV2TableContextMenuAction,
+      handleV2TableGroupContextMenuAction,
+      loadTables,
+      openRenameSchemaModal,
+      resolveSidebarTreeSingleSelectedNode,
+      shouldSidebarTreeKeyboardShortcut,
+  ]);
+
   const handleSidebarTreeKeyboardShortcuts = useCallback((event: KeyboardEvent) => {
       if (!shouldSidebarTreeKeyboardShortcut(event.target, { requireSingleSelection: true })) {
           return false;
@@ -3175,16 +3312,22 @@ const Sidebar: React.FC<{
       if (sidebarNewQueryBinding.enabled && isShortcutMatch(event, sidebarNewQueryBinding.combo)) {
           return triggerSidebarTreeNewQueryShortcut();
       }
+      const sidebarDesignTableBinding = resolveShortcutBinding(shortcutOptions, 'sidebarDesignTable', activeShortcutPlatform);
+      if (sidebarDesignTableBinding.enabled && isShortcutMatch(event, sidebarDesignTableBinding.combo)) {
+          return triggerSidebarTreeDesignShortcut();
+      }
       const sidebarViewTableDdlBinding = resolveShortcutBinding(shortcutOptions, 'sidebarViewTableDdl', activeShortcutPlatform);
       if (sidebarViewTableDdlBinding.enabled && isShortcutMatch(event, sidebarViewTableDdlBinding.combo)) {
           return triggerSidebarTreeDdlShortcut();
       }
-      return false;
+      return triggerSidebarTreeMenuShortcut(event);
   }, [
       activeShortcutPlatform,
       shortcutOptions,
       shouldSidebarTreeKeyboardShortcut,
+      triggerSidebarTreeDesignShortcut,
       triggerSidebarTreeDdlShortcut,
+      triggerSidebarTreeMenuShortcut,
       triggerSidebarTreeNewQueryShortcut,
   ]);
 
@@ -3198,8 +3341,13 @@ const Sidebar: React.FC<{
       }
   }, [setActiveContext]);
 
-  const shouldSkipSidebarTreeKeyboardShortcut = useCallback((event: Pick<KeyboardEvent, 'target'>) => {
-      if (isV2CommandSearchOpen || contextMenu) {
+  const shouldSkipSidebarTreeKeyboardShortcut = useCallback((event: Pick<KeyboardEvent, 'target'>, options?: {
+      allowWithContextMenu?: boolean;
+  }) => {
+      if (isV2CommandSearchOpen) {
+          return true;
+      }
+      if (contextMenu && !options?.allowWithContextMenu) {
           return true;
       }
       if (isEditableShortcutTarget(event.target)) {
@@ -3211,42 +3359,72 @@ const Sidebar: React.FC<{
       return false;
   }, [contextMenu, isV2CommandSearchOpen]);
 
-  const handleSidebarTreeKeyboardShortcut = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (shouldSkipSidebarTreeKeyboardShortcut(event.nativeEvent)) {
-          return;
+  const consumeSidebarTreeKeyboardEvent = useCallback((event: KeyboardEvent): boolean => {
+      const allowWithContextMenu = !!matchSidebarTreeMenuShortcut(event)
+          || isSidebarTreeCopyShortcutKeyboardEvent(event)
+          || isSidebarTreeClearSelectionKeyboardEvent(event)
+          || (() => {
+              const sidebarNewQueryBinding = resolveShortcutBinding(shortcutOptions, 'sidebarNewQuery', activeShortcutPlatform);
+              if (sidebarNewQueryBinding.enabled && isShortcutMatch(event, sidebarNewQueryBinding.combo)) return true;
+              const sidebarDesignTableBinding = resolveShortcutBinding(shortcutOptions, 'sidebarDesignTable', activeShortcutPlatform);
+              if (sidebarDesignTableBinding.enabled && isShortcutMatch(event, sidebarDesignTableBinding.combo)) return true;
+              const sidebarViewTableDdlBinding = resolveShortcutBinding(shortcutOptions, 'sidebarViewTableDdl', activeShortcutPlatform);
+              if (sidebarViewTableDdlBinding.enabled && isShortcutMatch(event, sidebarViewTableDdlBinding.combo)) return true;
+              return false;
+          })();
+      if (shouldSkipSidebarTreeKeyboardShortcut(event, { allowWithContextMenu })) {
+          return false;
       }
       if (!shouldSidebarTreeKeyboardShortcut(event.target)) {
-          return;
+          return false;
       }
-      if (isSidebarTreeClearSelectionKeyboardEvent(event.nativeEvent)) {
+      if (isSidebarTreeClearSelectionKeyboardEvent(event)) {
           if (getSidebarTreeSelectedCount() <= 0) {
-              return;
+              return false;
           }
+          setContextMenu(null);
           clearSidebarTreeSelection();
-          event.preventDefault();
-          event.stopPropagation();
-          return;
+          return true;
       }
-      if (!isSidebarTreeCopyShortcutKeyboardEvent(event.nativeEvent)) {
-          if (handleSidebarTreeKeyboardShortcuts(event.nativeEvent)) {
-              event.preventDefault();
-              event.stopPropagation();
+      if (!isSidebarTreeCopyShortcutKeyboardEvent(event)) {
+          if (!handleSidebarTreeKeyboardShortcuts(event)) {
+              return false;
           }
-          return;
+          setContextMenu(null);
+          return true;
+      }
+      const singleNode = resolveSidebarTreeSingleSelectedNode();
+      if (singleNode?.type === 'table') {
+          setContextMenu(null);
+          void handleCopyTableName(singleNode);
+          return true;
       }
       if (!triggerSidebarTreeCopy()) {
-          return;
+          return false;
       }
-      event.preventDefault();
-      event.stopPropagation();
+      setContextMenu(null);
+      return true;
   }, [
+      activeShortcutPlatform,
       clearSidebarTreeSelection,
       getSidebarTreeSelectedCount,
+      handleCopyTableName,
       handleSidebarTreeKeyboardShortcuts,
+      resolveSidebarTreeSingleSelectedNode,
+      setContextMenu,
+      shortcutOptions,
       shouldSidebarTreeKeyboardShortcut,
       shouldSkipSidebarTreeKeyboardShortcut,
       triggerSidebarTreeCopy,
   ]);
+
+  const handleSidebarTreeKeyboardShortcut = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!consumeSidebarTreeKeyboardEvent(event.nativeEvent)) {
+          return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+  }, [consumeSidebarTreeKeyboardEvent]);
 
   useEffect(() => {
       const handleSidebarNewQueryEvent = (event?: Event) => {
@@ -3281,30 +3459,24 @@ const Sidebar: React.FC<{
   }, [triggerSidebarTreeDdlShortcut]);
 
   useEffect(() => {
+      const handleSidebarDesignTableEvent = (event?: Event) => {
+          if (!triggerSidebarTreeDesignShortcut()) {
+              return;
+          }
+          const detail = (event as CustomEvent<{ markHandled?: () => void }> | undefined)?.detail;
+          if (typeof detail?.markHandled === 'function') {
+              detail.markHandled();
+          }
+      };
+      window.addEventListener('gonavi:sidebar-design-table', handleSidebarDesignTableEvent as EventListener);
+      return () => {
+          window.removeEventListener('gonavi:sidebar-design-table', handleSidebarDesignTableEvent as EventListener);
+      };
+  }, [triggerSidebarTreeDesignShortcut]);
+
+  useEffect(() => {
       const onWindowKeyDown = (event: KeyboardEvent) => {
-          if (shouldSkipSidebarTreeKeyboardShortcut(event)) {
-              return;
-          }
-          if (!shouldSidebarTreeKeyboardShortcut(event.target)) {
-              return;
-          }
-          if (isSidebarTreeClearSelectionKeyboardEvent(event)) {
-              if (getSidebarTreeSelectedCount() <= 0) {
-                  return;
-              }
-              clearSidebarTreeSelection();
-              event.preventDefault();
-              event.stopPropagation();
-              return;
-          }
-          if (!isSidebarTreeCopyShortcutKeyboardEvent(event)) {
-              if (handleSidebarTreeKeyboardShortcuts(event)) {
-                  event.preventDefault();
-                  event.stopPropagation();
-              }
-              return;
-          }
-          if (!triggerSidebarTreeCopy()) {
+          if (!consumeSidebarTreeKeyboardEvent(event)) {
               return;
           }
           event.preventDefault();
@@ -3314,14 +3486,7 @@ const Sidebar: React.FC<{
       return () => {
           window.removeEventListener('keydown', onWindowKeyDown, true);
       };
-  }, [
-      clearSidebarTreeSelection,
-      getSidebarTreeSelectedCount,
-      handleSidebarTreeKeyboardShortcuts,
-      shouldSidebarTreeKeyboardShortcut,
-      shouldSkipSidebarTreeKeyboardShortcut,
-      triggerSidebarTreeCopy,
-  ]);
+  }, [consumeSidebarTreeKeyboardEvent]);
 
   const v2CommandSearchPanelProps: SidebarSearchPanelProps<V2CommandSearchItem> = {
     isOpen: isV2CommandSearchOpen,

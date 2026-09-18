@@ -385,15 +385,17 @@ describe('shortcut defaults', () => {
     });
   });
 
-  it('keeps enabled default shortcuts unique per platform', () => {
+  it('keeps enabled default shortcuts unique per platform within the same scope', () => {
     for (const platform of ['mac', 'windows'] as const) {
       const seen = new Map<string, string>();
       Object.entries(DEFAULT_SHORTCUT_OPTIONS).forEach(([action, bindings]) => {
         const binding = bindings[platform];
         if (!binding.enabled || !binding.combo) return;
-        const existingAction = seen.get(binding.combo);
-        expect(existingAction, `${platform} ${binding.combo} is shared by ${existingAction} and ${action}`).toBeUndefined();
-        seen.set(binding.combo, action);
+        const scope = SHORTCUT_ACTION_META[action as keyof typeof SHORTCUT_ACTION_META].scope || 'global';
+        const key = `${scope}::${binding.combo}`;
+        const existingAction = seen.get(key);
+        expect(existingAction, `${platform} ${binding.combo} is shared by ${existingAction} and ${action} in scope ${scope}`).toBeUndefined();
+        seen.set(key, action);
       });
     }
   });
@@ -410,6 +412,10 @@ describe('shortcut defaults', () => {
     expect(DEFAULT_SHORTCUT_OPTIONS.sidebarViewTableDdl).toEqual({
       mac: { combo: 'Ctrl+Q', enabled: true },
       windows: { combo: 'Ctrl+Q', enabled: true },
+    });
+    expect(DEFAULT_SHORTCUT_OPTIONS.sidebarDesignTable).toEqual({
+      mac: { combo: 'Meta+D', enabled: true },
+      windows: { combo: 'Ctrl+D', enabled: true },
     });
     expect(DEFAULT_SHORTCUT_OPTIONS.switchToNextTab).toEqual({
       mac: { combo: 'Ctrl+Tab', enabled: true },
