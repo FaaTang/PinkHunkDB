@@ -1,6 +1,4 @@
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { positionSqlExecutionChooserHost } from './SqlExecutionChooser';
@@ -70,10 +68,7 @@ describe('positionSqlExecutionChooserHost', () => {
 
 describe('SqlExecutionChooser scrollable list', () => {
   it('caps panel height and enables option list scrolling', () => {
-    const source = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), 'SqlExecutionChooser.tsx'),
-      'utf8',
-    );
+    const source = readFileSync(new URL('./SqlExecutionChooser.tsx', import.meta.url), 'utf8');
     expect(source).toContain('max-height: min(70vh, 560px)');
     expect(source).toContain('gn-sql-execution-chooser-options');
     expect(source).toContain('overflow-y: auto');
