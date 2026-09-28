@@ -5309,6 +5309,10 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       }, wasClosed ? 350 : 0);
   };
 
+  const handleDismissExecutionError = () => {
+      setExecutionError('');
+  };
+
   const sqlEditorTransactionToolbar = (
       <QueryEditorTransactionToolbar
           darkMode={darkMode}
@@ -5445,6 +5449,7 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
           onReloadResult={handleReloadResult}
           onResultPageChange={handleResultPageChange}
           onDiagnoseExecutionError={handleDiagnoseExecutionError}
+          onDismissExecutionError={handleDismissExecutionError}
           resultsClearedByLowMemory={Boolean(tab.resultsCleared && !loading && resultSets.length === 0)}
           onRerunQuery={requestRun}
         />

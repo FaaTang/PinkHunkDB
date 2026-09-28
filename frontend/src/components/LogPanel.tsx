@@ -12,6 +12,7 @@ interface LogPanelProps {
     variant?: 'panel' | 'embedded';
     executionError?: string;
     onDiagnoseExecutionError?: () => void;
+    onDismissExecutionError?: () => void;
 }
 
 const LogPanel: React.FC<LogPanelProps> = ({
@@ -21,10 +22,15 @@ const LogPanel: React.FC<LogPanelProps> = ({
     variant = 'panel',
     executionError,
     onDiagnoseExecutionError,
+    onDismissExecutionError,
 }) => {
     const { t } = useI18n();
     const sqlLogs = useStore(state => state.sqlLogs);
     const clearSqlLogs = useStore(state => state.clearSqlLogs);
+    const handleClearLogs = () => {
+        clearSqlLogs();
+        onDismissExecutionError?.();
+    };
     const theme = useStore(state => state.theme);
     const appearance = useStore(state => state.appearance);
     const memorySettings = useStore(state => state.memorySettings);
@@ -226,7 +232,7 @@ const LogPanel: React.FC<LogPanelProps> = ({
                             type="text"
                             size="small"
                             icon={<ClearOutlined />}
-                            onClick={clearSqlLogs}
+                            onClick={handleClearLogs}
                             style={{ color: panelMutedTextColor }}
                         />
                     </Tooltip>
@@ -242,9 +248,23 @@ const LogPanel: React.FC<LogPanelProps> = ({
                             flexDirection: 'column',
                             gap: 12,
                         }}>
-                            <div style={{ color: '#ff7875', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <CloseOutlined />
-                                <span>{t('query_editor.result.execution_failed')}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                <div style={{ color: '#ff7875', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                                    <CloseOutlined />
+                                    <span>{t('query_editor.result.execution_failed')}</span>
+                                </div>
+                                {onDismissExecutionError && (
+                                    <Tooltip title={t('common.close')}>
+                                        <Button
+                                            type="text"
+                                            size="small"
+                                            icon={<CloseOutlined />}
+                                            onClick={onDismissExecutionError}
+                                            aria-label={t('common.close')}
+                                            style={{ color: darkMode ? '#ffa39e' : '#cf1322', flexShrink: 0 }}
+                                        />
+                                    </Tooltip>
+                                )}
                             </div>
                             <div
                                 className="log-panel-scroll"
@@ -336,7 +356,7 @@ const LogPanel: React.FC<LogPanelProps> = ({
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Tooltip title={t('log_panel.action.clear')}>
-                        <Button type="text" size="small" icon={<ClearOutlined />} onClick={clearSqlLogs} style={{ color: panelMutedTextColor }} />
+                        <Button type="text" size="small" icon={<ClearOutlined />} onClick={handleClearLogs} style={{ color: panelMutedTextColor }} />
                     </Tooltip>
                     {onClose && (
                         <Tooltip title={t('log_panel.action.close')}>

@@ -63,11 +63,13 @@ vi.mock("antd", async () => {
       children,
       icon,
       onClick,
+      "aria-label": ariaLabel,
     }: {
       children?: React.ReactNode;
       icon?: React.ReactNode;
       onClick?: () => void;
-    }) => React.createElement("button", { onClick }, icon, children),
+      "aria-label"?: string;
+    }) => React.createElement("button", { onClick, "aria-label": ariaLabel }, icon, children),
     Tooltip: ({ children, title }: { children?: React.ReactNode; title?: React.ReactNode }) =>
       React.createElement("span", { title }, children),
     Empty,
@@ -157,10 +159,12 @@ describe("LogPanel i18n", () => {
       },
     ];
     const onDiagnoseExecutionError = vi.fn();
+    const onDismissExecutionError = vi.fn();
     const renderer = renderLogPanel({
       variant: "embedded",
       executionError: "Table 'missav_bot.message' doesn't exist",
       onDiagnoseExecutionError,
+      onDismissExecutionError,
     });
     const renderedText = textContent(renderer.toJSON());
 
@@ -173,6 +177,42 @@ describe("LogPanel i18n", () => {
       diagnoseButton.props.onClick?.();
     });
     expect(onDiagnoseExecutionError).toHaveBeenCalledTimes(1);
+  });
+
+  it("dismisses the embedded execution error from the card close button", () => {
+    const onDismissExecutionError = vi.fn();
+    const renderer = renderLogPanel({
+      variant: "embedded",
+      executionError: "syntax error near LIMIT",
+      onDismissExecutionError,
+    });
+
+    const dismissButton = renderer.root.findAll(
+      (node) => node.type === "button" && node.props?.["aria-label"] === "Close",
+    )[0];
+    expect(dismissButton).toBeTruthy();
+    act(() => {
+      dismissButton.props.onClick?.();
+    });
+    expect(onDismissExecutionError).toHaveBeenCalledTimes(1);
+    expect(storeState.clearSqlLogs).not.toHaveBeenCalled();
+  });
+
+  it("clears sql logs and the embedded execution error together", () => {
+    const onDismissExecutionError = vi.fn();
+    const renderer = renderLogPanel({
+      variant: "embedded",
+      executionError: "syntax error near LIMIT",
+      onDismissExecutionError,
+    });
+
+    const clearButton = renderer.root.findAll((node) => node.props?.title === "Clear logs")[0]
+      .findAll((node: any) => node.type === "button")[0];
+    act(() => {
+      clearButton.props.onClick?.();
+    });
+    expect(storeState.clearSqlLogs).toHaveBeenCalledTimes(1);
+    expect(onDismissExecutionError).toHaveBeenCalledTimes(1);
   });
 
   it("does not keep migrated Chinese UI literals in LogPanel source", () => {

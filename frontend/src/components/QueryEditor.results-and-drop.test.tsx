@@ -2678,10 +2678,12 @@ storeState.languagePreference = 'en-US';
     expect(panelSource).toContain('<LogPanel');
     expect(panelSource).toContain('variant="embedded"');
     expect(panelSource).toContain('executionError={executionError}');
+    expect(panelSource).toContain('onDismissExecutionError={executionError ? onDismissExecutionError : undefined}');
     expect(panelSource).toContain("t('log_panel.short_title')");
     expect(panelSource).toContain('[logTabItem, ...resultTabItems]');
     expect(editorSource).toContain("window.addEventListener('PinkHunkDB:show-sql-execution-log'");
     expect(editorSource).toContain('setActiveResultKey(QUERY_EDITOR_SQL_LOG_TAB_KEY)');
+    expect(editorSource).toContain('onDismissExecutionError={handleDismissExecutionError}');
   });
 
   it('keeps the v2 query editor toolbar grouped and compact', () => {

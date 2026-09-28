@@ -51,6 +51,7 @@ interface QueryEditorResultsPanelProps {
     onReloadResult: (key: string, sql: string) => void;
     onResultPageChange: (key: string, page: number, pageSize: number) => void;
     onDiagnoseExecutionError: () => void;
+    onDismissExecutionError?: () => void;
     resultsClearedByLowMemory?: boolean;
     onRerunQuery?: () => void;
 }
@@ -78,6 +79,7 @@ const QueryEditorResultsPanel: React.FC<QueryEditorResultsPanelProps> = ({
     onReloadResult,
     onResultPageChange,
     onDiagnoseExecutionError,
+    onDismissExecutionError,
     resultsClearedByLowMemory = false,
     onRerunQuery,
 }) => {
@@ -401,6 +403,7 @@ const QueryEditorResultsPanel: React.FC<QueryEditorResultsPanelProps> = ({
                     variant="embedded"
                     executionError={executionError}
                     onDiagnoseExecutionError={executionError ? onDiagnoseExecutionError : undefined}
+                    onDismissExecutionError={executionError ? onDismissExecutionError : undefined}
                 />
             ),
         }
