@@ -169,7 +169,7 @@ const MIN_KEEPALIVE_INTERVAL_MINUTES = 1;
 const MAX_KEEPALIVE_INTERVAL_MINUTES = 1440;
 const DEFAULT_DIAGNOSTIC_TIMEOUT_SECONDS = 15;
 const MAX_DIAGNOSTIC_TIMEOUT_SECONDS = 300;
-const PERSIST_VERSION = 17;
+const PERSIST_VERSION = 18;
 const PERSIST_STORAGE_KEY = "lite-db-storage";
 const PERSIST_WRITE_DEBOUNCE_MS = 160;
 const MAX_PERSISTED_QUERY_TABS = 20;
@@ -2063,6 +2063,10 @@ const applyHydrationLowMemoryCaps = (
 const DATA_EDIT_AUTO_COMMIT_DELAY_OPTIONS = new Set([3000, 5000, 10000, 30000]);
 const SQL_EDITOR_AUTO_COMMIT_DELAY_OPTIONS = new Set([0, 3000, 5000, 10000, 30000]);
 
+const sanitizeTransactionCommitMode = (
+  value: unknown,
+): "manual" | "auto" => (value === "manual" ? "manual" : "auto");
+
 const sanitizeDataEditTransactionOptions = (
   value: unknown,
 ): DataEditTransactionOptions => {
@@ -2072,7 +2076,7 @@ const sanitizeDataEditTransactionOptions = (
       : {};
   const autoCommitDelayMs = Number(raw.autoCommitDelayMs);
   return {
-    commitMode: raw.commitMode === "auto" ? "auto" : "manual",
+    commitMode: sanitizeTransactionCommitMode(raw.commitMode),
     autoCommitDelayMs: DATA_EDIT_AUTO_COMMIT_DELAY_OPTIONS.has(autoCommitDelayMs)
       ? autoCommitDelayMs
       : 5000,
@@ -2089,7 +2093,7 @@ const sanitizeSqlEditorTransactionOptions = (
       : {};
   const autoCommitDelayMs = Number(raw.autoCommitDelayMs);
   return {
-    commitMode: raw.commitMode === "auto" ? "auto" : "manual",
+    commitMode: sanitizeTransactionCommitMode(raw.commitMode),
     autoCommitDelayMs: SQL_EDITOR_AUTO_COMMIT_DELAY_OPTIONS.has(autoCommitDelayMs)
       ? autoCommitDelayMs
       : 0,
@@ -2502,12 +2506,12 @@ export const useStore = create<AppState>()(
       updatePreferences: { ...DEFAULT_UPDATE_PREFERENCES },
       memorySettings: { ...DEFAULT_MEMORY_SETTINGS },
       dataEditTransactionOptions: {
-        commitMode: "manual",
+        commitMode: "auto",
         autoCommitDelayMs: 5000,
         mysqlCountFallbackLocateEnabled: true,
       },
       sqlEditorTransactionOptions: {
-        commitMode: "manual",
+        commitMode: "auto",
         autoCommitDelayMs: 0,
       },
       sqlEditorPendingTransactions: {},
@@ -4040,6 +4044,17 @@ export const useStore = create<AppState>()(
           sanitizeDataEditTransactionOptions(state.dataEditTransactionOptions);
         nextState.sqlEditorTransactionOptions =
           sanitizeSqlEditorTransactionOptions(state.sqlEditorTransactionOptions);
+        if (version < 18) {
+          // 产品默认从手动提交切换为自动提交：升级时统一落到 auto，用户仍可在界面改回手动。
+          nextState.dataEditTransactionOptions = sanitizeDataEditTransactionOptions({
+            ...nextState.dataEditTransactionOptions,
+            commitMode: "auto",
+          });
+          nextState.sqlEditorTransactionOptions = sanitizeSqlEditorTransactionOptions({
+            ...nextState.sqlEditorTransactionOptions,
+            commitMode: "auto",
+          });
+        }
         nextState.shortcutOptions = sanitizeShortcutOptions(
           state.shortcutOptions,
         );

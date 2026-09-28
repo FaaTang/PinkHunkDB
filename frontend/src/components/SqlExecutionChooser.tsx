@@ -136,6 +136,14 @@ const ensureSqlExecutionChooserHighlightStyle = () => {
 .gn-sql-execution-chooser {
   background: color-mix(in srgb, var(--gn-bg-panel, #fff) 80%, transparent);
   backdrop-filter: blur(6px);
+  max-height: min(70vh, 560px);
+  overflow: hidden;
+}
+.gn-sql-execution-chooser-options {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 .gn-sql-execution-chooser-drag-handle {
   cursor: grab;
@@ -298,12 +306,20 @@ const SqlExecutionChooserPanel: React.FC<SqlExecutionChooserPanelProps> = ({
     panelRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    const selectedButton = panelRef.current?.querySelector(
+      `[data-option-id="${CSS.escape(String(selectedId))}"]`,
+    ) as HTMLElement | null;
+    selectedButton?.scrollIntoView({ block: 'nearest' });
+  }, [selectedId]);
+
   const renderOptionButton = (option: SqlExecutionChooserOptionView) => {
     const isSelected = option.id === selectedId;
     const executeHint = translate('query_editor.execution.chooser.option_execute_hint');
     return (
       <button
         key={option.id}
+        data-option-id={option.id}
         aria-pressed={isSelected}
         onClick={() => onSelectedIdChange(option.id)}
         onDoubleClick={(event) => {
@@ -329,6 +345,7 @@ const SqlExecutionChooserPanel: React.FC<SqlExecutionChooserPanelProps> = ({
           cursor: 'pointer',
           width: '100%',
           boxSizing: 'border-box',
+          flexShrink: 0,
         }}
       >
         <span style={{ fontSize: 12, color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -348,15 +365,20 @@ const SqlExecutionChooserPanel: React.FC<SqlExecutionChooserPanelProps> = ({
       style={{
         flex: 1,
         minWidth: 0,
+        minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
         gap: 6,
       }}
     >
-      <div style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', padding: '0 2px' }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', padding: '0 2px', flexShrink: 0 }}>
         {title}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div
+        className="gn-sql-execution-chooser-options"
+        data-testid={`${testId}-list`}
+        style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
+      >
         {columnOptions.map(renderOptionButton)}
       </div>
     </div>
@@ -400,6 +422,7 @@ const SqlExecutionChooserPanel: React.FC<SqlExecutionChooserPanelProps> = ({
           color: '#999',
           fontSize: 11,
           letterSpacing: 1,
+          flexShrink: 0,
         }}
       >
         <span aria-hidden style={{ fontSize: 14, lineHeight: 1 }}>⋮⋮</span>
@@ -411,6 +434,9 @@ const SqlExecutionChooserPanel: React.FC<SqlExecutionChooserPanelProps> = ({
           flexDirection: showTwoColumns ? 'row' : 'column',
           alignItems: 'stretch',
           gap: showTwoColumns ? 10 : 8,
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
         {primaryOptions.length > 0 && renderColumn(
@@ -427,7 +453,7 @@ const SqlExecutionChooserPanel: React.FC<SqlExecutionChooserPanelProps> = ({
           'sql-execution-chooser-subquery-column',
         )}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: 2 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: 2, flexShrink: 0 }}>
         <button
           type="button"
           className="gn-sql-execution-chooser-settings-link"

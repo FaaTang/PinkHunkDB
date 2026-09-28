@@ -452,7 +452,7 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       updateResultPanelVisibility(true);
       setActiveResultKey(QUERY_EDITOR_SQL_LOG_TAB_KEY);
   }, [activeResultKey, isActive, isResultPanelVisible, updateResultPanelVisibility]);
-  const sqlEditorCommitMode = sqlEditorTransactionOptions?.commitMode === 'auto' ? 'auto' : 'manual';
+  const sqlEditorCommitMode = sqlEditorTransactionOptions?.commitMode === 'manual' ? 'manual' : 'auto';
   const sqlEditorAutoCommitDelayMs = SQL_EDITOR_AUTO_COMMIT_DELAY_OPTIONS.some((item) => item.value === sqlEditorTransactionOptions?.autoCommitDelayMs)
       ? Number(sqlEditorTransactionOptions?.autoCommitDelayMs)
       : 0;

@@ -1513,7 +1513,7 @@ const DataGrid: React.FC<DataGridProps> = ({
 
   const pendingChangeCount = addedRows.length + Object.keys(modifiedRows).length + deletedRowKeys.size;
   const hasChanges = pendingChangeCount > 0;
-  const dataEditCommitMode = dataEditTransactionOptions?.commitMode === 'auto' ? 'auto' : 'manual';
+  const dataEditCommitMode = dataEditTransactionOptions?.commitMode === 'manual' ? 'manual' : 'auto';
   const dataEditAutoCommitDelayMs = DATA_EDIT_AUTO_COMMIT_DELAY_OPTIONS.some((item) => item.value === dataEditTransactionOptions?.autoCommitDelayMs)
       ? Number(dataEditTransactionOptions?.autoCommitDelayMs)
       : 5000;

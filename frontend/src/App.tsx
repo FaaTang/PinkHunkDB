@@ -111,7 +111,7 @@ import { useAppUpdateManager } from './hooks/useAppUpdateManager';
 import { useAppSidebarResize } from './hooks/useAppSidebarResize';
 import { useAppUtilityStyles } from './hooks/useAppUtilityStyles';
 import { AboutReleaseNotes } from './components/AboutReleaseNotes';
-import { ApplyDataRootDirectory, GetDataRootDirectoryInfo, GetSavedConnections, ListInstalledFontFamilies, OpenDataRootDirectory, SelectDataRootDirectory, SetMacNativeWindowControls, SetWindowTranslucency, SyncMemoryPolicy } from '../wailsjs/go/app/App';
+import { ApplyDataRootDirectory, GetDataRootDirectoryInfo, GetSavedConnections, ListInstalledFontFamilies, OpenDataRootDirectory, SelectDataRootDirectory, SetMacNativeWindowControls, SetWindowTranslucency, SyncMemoryPolicy, DBRollbackTransaction } from '../wailsjs/go/app/App';
 import { getAntdLocale } from './i18n/frameworkLocale';
 import { useI18n } from './i18n/provider';
 import {
@@ -2381,10 +2381,28 @@ function App() {
   }, [securityUpdateRepairSource]);
 
   const handleAppQuit = useCallback(() => {
-      // Window close: flush unsaved query drafts into persisted tabs, then quit — no save prompt.
-      const tabIds = useStore.getState().tabs.map((tab) => String(tab.id || '').trim()).filter(Boolean);
+      // Window close: flush unsaved query drafts, rollback pending SQL transactions, then quit.
+      const state = useStore.getState();
+      const tabIds = state.tabs.map((tab) => String(tab.id || '').trim()).filter(Boolean);
       flushQueryTabDrafts(tabIds);
-      Quit();
+      const pendingEntries = Object.entries(state.sqlEditorPendingTransactions || {})
+          .map(([tabId, transaction]) => ({
+              tabId: String(tabId || '').trim(),
+              transactionId: String(transaction?.id || '').trim(),
+          }))
+          .filter((item) => item.tabId && item.transactionId);
+      void (async () => {
+          if (pendingEntries.length > 0) {
+              await Promise.allSettled(
+                  pendingEntries.map((item) => DBRollbackTransaction(item.transactionId)),
+              );
+              const setPending = useStore.getState().setSqlEditorPendingTransaction;
+              pendingEntries.forEach((item) => {
+                  setPending(item.tabId, null);
+              });
+          }
+          Quit();
+      })();
   }, []);
 
   const handleOpenAISettings = useCallback((providerId?: string) => {

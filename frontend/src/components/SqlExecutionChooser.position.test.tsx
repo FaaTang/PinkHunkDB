@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { positionSqlExecutionChooserHost } from './SqlExecutionChooser';
@@ -62,5 +65,18 @@ describe('positionSqlExecutionChooserHost', () => {
     expect(positionSqlExecutionChooserHost(editor, hostNode as any, overlayRoot as any)).toBe(true);
     expect(hostNode.style.top).toBe('42px');
     expect(hostNode.style.left).toBe('292px');
+  });
+});
+
+describe('SqlExecutionChooser scrollable list', () => {
+  it('caps panel height and enables option list scrolling', () => {
+    const source = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'SqlExecutionChooser.tsx'),
+      'utf8',
+    );
+    expect(source).toContain('max-height: min(70vh, 560px)');
+    expect(source).toContain('gn-sql-execution-chooser-options');
+    expect(source).toContain('overflow-y: auto');
+    expect(source).toContain("scrollIntoView({ block: 'nearest' })");
   });
 });

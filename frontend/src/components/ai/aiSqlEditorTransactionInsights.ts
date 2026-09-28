@@ -26,7 +26,7 @@ const translateOrFallback = (
 };
 
 const normalizeCommitMode = (value: unknown): SqlEditorCommitMode =>
-  String(value || '').trim().toLowerCase() === 'auto' ? 'auto' : 'manual';
+  String(value || '').trim().toLowerCase() === 'manual' ? 'manual' : 'auto';
 
 const normalizeDelayMs = (value: unknown): number => {
   const delayMs = Number(value);
