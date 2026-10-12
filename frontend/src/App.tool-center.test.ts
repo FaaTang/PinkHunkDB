@@ -268,6 +268,7 @@ describe('tool center menu entries', () => {
     expect(appSource).toContain('if (shouldResetWebViewZoom && !isMaximised)');
     expect(appSource).toContain('const res = await (window as any).go?.app?.App?.ResetWebViewZoom?.();');
     expect(appSource).toContain('if (!shouldApplyWindowsScaleFix(reason, hasViewportScaleDrift))');
+    expect(appSource).toContain("if (reason !== 'activation')");
     expect(appSource).toContain('const nudgedWidth = getWindowsScaleFixNudgedWidth(width);');
     expect(appSource).toContain('WindowSetSize(nudgedWidth, height);');
     expect(appSource).toContain('该异常不一定表现为 viewport ratio drift');

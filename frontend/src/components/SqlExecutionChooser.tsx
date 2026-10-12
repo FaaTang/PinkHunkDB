@@ -134,8 +134,8 @@ const ensureSqlExecutionChooserHighlightStyle = () => {
   z-index: 1;
 }
 .gn-sql-execution-chooser {
-  background: color-mix(in srgb, var(--gn-bg-panel, #fff) 80%, transparent);
-  backdrop-filter: blur(6px);
+  /* 避免 backdrop-filter：WebView2 上容易整窗闪一下 */
+  background: var(--gn-bg-panel, #fff);
   max-height: min(70vh, 560px);
   overflow: hidden;
 }

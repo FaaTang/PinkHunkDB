@@ -32,6 +32,20 @@ const QUERY_LOCATOR_METADATA_TIMEOUT_MS = 1500;
 const SQLSERVER_MESSAGE_PREFIX_RE = /^\s*mssql:/i;
 
 /**
+ * 首次展开结果区时，按当前编辑器壳高度推一个分割高度，
+ * 避免从「占满主区」突然落到默认 300px 造成整窗闪一下。
+ */
+export const resolveSeededEditorHeightForResultsPanel = (
+  currentShellHeight: number,
+  clampHeight: (height: number) => number,
+): number | null => {
+  if (!Number.isFinite(currentShellHeight) || currentShellHeight <= 120) {
+    return null;
+  }
+  return clampHeight(Math.round(currentShellHeight * 0.55));
+};
+
+/**
  * DBGetColumns/DBGetIndexes 的第一个参数在 PG 系里是「数据库名」，不是 schema。
  * extractQueryResultTableRef 在 `public.t` 时会把 schema 放进 metadataDbName，
  * 若直接拿去 RPC，会把连接切到名为 public 的库，导致有主键的表也加载失败。

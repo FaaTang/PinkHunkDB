@@ -1076,7 +1076,10 @@ function App() {
                               console.warn('ResetWebViewZoom call failed in fixWindowScaleIfNeeded', e);
                           }
                       }
-                      window.dispatchEvent(new Event('resize'));
+                      // activation 且无需 zoom reset 时不要空发 resize，避免无感的快捷键/焦点抖动闪一下。
+                      if (reason !== 'activation' || shouldResetWebViewZoom) {
+                          window.dispatchEvent(new Event('resize'));
+                      }
                       lastFixAt = Date.now();
                       return;
                   }
@@ -1101,7 +1104,10 @@ function App() {
               }
 
               if (!shouldApplyWindowsScaleFix(reason, hasViewportScaleDrift)) {
-                  window.dispatchEvent(new Event('resize'));
+                  // 普通 activation 没有 viewport drift 时无需强制 resize。
+                  if (reason !== 'activation') {
+                      window.dispatchEvent(new Event('resize'));
+                  }
                   lastFixAt = Date.now();
                   return;
               }

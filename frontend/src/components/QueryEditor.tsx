@@ -125,6 +125,7 @@ import {
     resolveQueryEditorNavigationDecorations,
     resolveQueryEditorNavigationTarget,
     resolveQueryLocatorPlan,
+    resolveSeededEditorHeightForResultsPanel,
     rewriteLeadingSelectTableReference,
     splitCompletionSchemaAndTable,
     splitQueryIdentifierPathSegments,
@@ -431,7 +432,31 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       setIsResultPanelVisible(tab.resultPanelVisible === true);
   }, [tab.id, tab.resultPanelVisible]);
   const updateResultPanelVisibility = useCallback((visible: boolean) => {
-      setIsResultPanelVisible(visible);
+      if (visible) {
+          setIsResultPanelVisible((wasVisible) => {
+              if (!wasVisible) {
+                  const shellHeight = editorShellRef.current?.getBoundingClientRect().height;
+                  const viewportHeight = Number.isFinite(window.innerHeight) ? window.innerHeight : 800;
+                  const seeded = resolveSeededEditorHeightForResultsPanel(
+                      Number(shellHeight || 0),
+                      (height) => {
+                          const maxHeight = Math.max(100, viewportHeight - 200);
+                          return Math.max(100, Math.min(maxHeight, height));
+                      },
+                  );
+                  if (seeded !== null) {
+                      pendingEditorHeightRef.current = seeded;
+                      setEditorHeight(seeded);
+                      if (editorShellRef.current) {
+                          editorShellRef.current.style.height = `${seeded}px`;
+                      }
+                  }
+              }
+              return true;
+          });
+      } else {
+          setIsResultPanelVisible(false);
+      }
       updateQueryTabDraft(tab.id, { resultPanelVisible: visible });
   }, [tab.id, updateQueryTabDraft]);
   const toggleResultPanelVisibility = useCallback(() => {
@@ -2193,10 +2218,16 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
               runBinding.combo, monaco.KeyMod, monaco.KeyCode
           );
           if (keyBinding) {
+              const monacoKeybinding = keyBinding.keyMod | keyBinding.keyCode;
+              // 解除 Monaco 默认 Ctrl/Cmd+Enter（insertLineAfter），避免与执行快捷键抢键导致编辑区跳动闪一下。
+              monaco.editor?.addKeybindingRule?.({
+                  keybinding: monacoKeybinding,
+                  command: '-editor.action.insertLineAfter',
+              });
               runQueryActionRef.current = editor.addAction({
                   id: 'PinkHunkDB.runQuery',
                   label: buildQueryEditorMonacoActionLabel('app.shortcuts.action.runQuery.label'),
-                  keybindings: [keyBinding.keyMod | keyBinding.keyCode],
+                  keybindings: [monacoKeybinding],
                   run: () => {
                       window.dispatchEvent(new CustomEvent('PinkHunkDB:run-active-query'));
                   },
@@ -4563,10 +4594,15 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
 
       const keyBinding = comboToMonacoKeyBinding(binding.combo, monaco.KeyMod, monaco.KeyCode);
       if (keyBinding) {
+          const monacoKeybinding = keyBinding.keyMod | keyBinding.keyCode;
+          monaco.editor?.addKeybindingRule?.({
+              keybinding: monacoKeybinding,
+              command: '-editor.action.insertLineAfter',
+          });
           runQueryActionRef.current = editor.addAction({
               id: 'PinkHunkDB.runQuery',
               label: buildQueryEditorMonacoActionLabel('app.shortcuts.action.runQuery.label'),
-              keybindings: [keyBinding.keyMod | keyBinding.keyCode],
+              keybindings: [monacoKeybinding],
               run: () => {
                   window.dispatchEvent(new CustomEvent('PinkHunkDB:run-active-query'));
               },
