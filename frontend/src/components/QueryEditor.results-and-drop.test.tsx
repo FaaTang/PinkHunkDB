@@ -2809,6 +2809,11 @@ storeState.languagePreference = 'en-US';
     const resizer = renderer.root.find((node) => node.props?.title === '拖动调整高度');
     await act(async () => {
       resizer.props.onMouseDown({ clientY: 300, preventDefault: vi.fn() });
+    });
+    // mousedown 会锁定像素高度并触发 React 重渲染；只统计拖动阶段的 rAF 合并。
+    vi.mocked(window.requestAnimationFrame).mockClear();
+    frameCallbacks.length = 0;
+    await act(async () => {
       moveListeners.forEach((listener) => listener({ clientY: 340 } as MouseEvent));
       moveListeners.forEach((listener) => listener({ clientY: 380 } as MouseEvent));
     });
@@ -2868,7 +2873,7 @@ storeState.languagePreference = 'en-US';
     });
 
     expect(editorState.editor.executeEdits).toHaveBeenCalledWith(
-      'gonavi-sidebar-drop',
+      'PinkHunkDB-sidebar-drop',
       [expect.objectContaining({ text: 'reporting.active_users' })],
     );
     expect(editorState.value).toContain('reporting.active_users');

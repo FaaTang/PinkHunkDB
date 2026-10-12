@@ -236,12 +236,13 @@ const QueryEditorToolbar: React.FC<QueryEditorToolbarProps> = ({
             icon={<PlayCircleOutlined />}
             onMouseDown={onCaptureEditorCursorPosition}
             onClick={onRun}
-            loading={loading}
+            disabled={loading}
+            aria-busy={loading}
           >
             {t("query_editor.action.run")}
           </Button>
         </Tooltip>
-        {/* 始终占位，避免 loading 时突然插入 Stop 导致 Acrylic 窗口闪一下 */}
+        {/* 始终占位，避免 loading 时插入 Stop / AntD loading 动画挤宽工具栏导致查询区晃动 */}
         <Button
           type="primary"
           danger

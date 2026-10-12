@@ -258,9 +258,21 @@ body[data-ui-version="v2"] .gn-v2-query-toolbar .ant-btn-icon-only {
 }
 
 body[data-ui-version="v2"] .gn-v2-query-toolbar-run-action.ant-btn {
-  min-width: 64px;
+  /* 固定宽度，避免 disabled/aria-busy 状态切换时工具栏微移 */
+  min-width: 88px;
   padding: 0 13px !important;
   font-weight: 650 !important;
+}
+
+body[data-ui-version="v2"] .gn-v2-query-toolbar-run-action.ant-btn .anticon {
+  width: 14px;
+  min-width: 14px;
+}
+
+body[data-ui-version="v2"] .gn-v2-query-monaco-shell {
+  /* 把 Monaco 内部重排限制在壳内；不用 contain:size，避免 flex 子项被算成 0 高 */
+  contain: layout;
+  min-height: 0;
 }
 
 body[data-ui-version="v2"] .gn-v2-query-toolbar-ai-action.ant-btn {

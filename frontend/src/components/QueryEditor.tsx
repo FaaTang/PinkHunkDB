@@ -235,8 +235,9 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
   const [currentDb, setCurrentDb] = useState<string>(tab.dbName || '');
   const [dbList, setDbList] = useState<string[]>([]);
 
-  // Resizing state
+  // Resizing state：未拖过分隔条前用 flex 分流，避免首次展开结果区时 flex↔px 切换晃动
   const [editorHeight, setEditorHeight] = useState(300);
+  const [editorHeightLocked, setEditorHeightLocked] = useState(false);
   const editorShellRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
@@ -430,11 +431,29 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       () => getShortcutPrimaryModifierDisplayLabel(activeShortcutPlatform),
       [activeShortcutPlatform],
   );
+  // 稳定 Monaco options 引用，避免 setLoading 等重渲染触发 updateOptions → 编辑区闪一下。
+  const queryEditorMonacoOptions = useMemo(() => ({
+      minimap: { enabled: false },
+      automaticLayout: true,
+      fixedOverflowWidgets: true,
+      find: {
+          addExtraSpaceOnTop: false,
+      },
+      hover: {
+          enabled: true,
+          delay: QUERY_EDITOR_HOVER_DELAY_MS,
+          above: false,
+      },
+      scrollBeyondLastLine: false,
+      quickSuggestions: { other: true, comments: false, strings: false },
+      suggestOnTriggerCharacters: true,
+  }), []);
   useEffect(() => {
       setIsResultPanelVisible(tab.resultPanelVisible === true);
   }, [tab.id, tab.resultPanelVisible]);
   const updateResultPanelVisibility = useCallback((visible: boolean) => {
-      if (visible && !isResultPanelVisibleRef.current) {
+      if (visible && !isResultPanelVisibleRef.current && editorHeightLocked) {
+          // 仅在用户曾拖过分隔条时恢复像素高度；首次展开走 flex，避免 Monaco 整块重排晃动。
           const shellHeight = editorShellRef.current?.getBoundingClientRect().height;
           const viewportHeight = Number.isFinite(window.innerHeight) ? window.innerHeight : 800;
           const seeded = resolveSeededEditorHeightForResultsPanel(
@@ -444,18 +463,17 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
                   return Math.max(100, Math.min(maxHeight, height));
               },
           );
-          if (seeded !== null) {
-              pendingEditorHeightRef.current = seeded;
-              setEditorHeight(seeded);
-              if (editorShellRef.current) {
-                  editorShellRef.current.style.height = `${seeded}px`;
-              }
+          const nextHeight = seeded ?? editorHeight;
+          pendingEditorHeightRef.current = nextHeight;
+          setEditorHeight(nextHeight);
+          if (editorShellRef.current) {
+              editorShellRef.current.style.height = `${nextHeight}px`;
           }
       }
       isResultPanelVisibleRef.current = visible;
       setIsResultPanelVisible(visible);
       updateQueryTabDraft(tab.id, { resultPanelVisible: visible });
-  }, [tab.id, updateQueryTabDraft]);
+  }, [editorHeight, editorHeightLocked, tab.id, updateQueryTabDraft]);
   const toggleResultPanelVisibility = useCallback(() => {
       setIsResultPanelVisible((previousVisible) => {
           const nextVisible = !previousVisible;
@@ -1654,8 +1672,15 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
       e.preventDefault();
-      dragRef.current = { startY: e.clientY, startHeight: editorHeight, currentHeight: editorHeight };
-      pendingEditorHeightRef.current = editorHeight;
+      const measuredHeight = Math.round(editorShellRef.current?.getBoundingClientRect().height || editorHeight);
+      const startHeight = Math.max(100, measuredHeight);
+      setEditorHeightLocked(true);
+      setEditorHeight(startHeight);
+      pendingEditorHeightRef.current = startHeight;
+      if (editorShellRef.current) {
+          editorShellRef.current.style.height = `${startHeight}px`;
+      }
+      dragRef.current = { startY: e.clientY, startHeight, currentHeight: startHeight };
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
   }, [editorHeight, handleMouseMove, handleMouseUp]);
@@ -5367,7 +5392,15 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       <div
         ref={editorPaneRef}
         className={'gn-v2-query-editor-pane'}
-        style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: isResultPanelVisible ? '0 0 auto' : '1 1 auto' }}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          // 未锁定高度时与结果区一起 flex 分流（约 7:3）；锁定后才改为按像素占位。
+          flex: isResultPanelVisible
+            ? (editorHeightLocked ? '0 0 auto' : '7 1 0%')
+            : '1 1 auto',
+        }}
       >
       <QueryEditorToolbar
         currentConnectionId={currentConnectionId}
@@ -5415,7 +5448,11 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       <div
         ref={editorShellRef}
         className={'gn-v2-query-monaco-shell'}
-        style={isResultPanelVisible ? { height: editorHeight, minHeight: '100px' } : { flex: '1 1 auto', minHeight: 0 }}
+        style={
+          isResultPanelVisible && editorHeightLocked
+            ? { height: editorHeight, minHeight: '100px', flex: '0 0 auto' }
+            : { flex: '1 1 auto', minHeight: 0 }
+        }
       >
         <Editor
           height="100%"
@@ -5428,22 +5465,7 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
               syncQueryDraft(nextValue);
           }}
           onMount={handleEditorDidMount}
-          options={{
-            minimap: { enabled: false },
-            automaticLayout: true,
-            fixedOverflowWidgets: true,
-            find: {
-              addExtraSpaceOnTop: false,
-            },
-            hover: {
-              enabled: true,
-              delay: QUERY_EDITOR_HOVER_DELAY_MS,
-              above: false,
-            },
-            scrollBeyondLastLine: false,
-            quickSuggestions: { other: true, comments: false, strings: false },
-            suggestOnTriggerCharacters: true,
-          }}
+          options={queryEditorMonacoOptions}
         />
       </div>
 
@@ -5463,7 +5485,28 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       )}
       </div>
 
-      {isResultPanelVisible && (
+      <div
+        className="gn-v2-query-results-host"
+        style={
+          isResultPanelVisible
+            ? {
+                flex: editorHeightLocked ? '1 1 auto' : '3 1 0%',
+                minHeight: 120,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }
+            : {
+                flex: '0 0 0',
+                height: 0,
+                minHeight: 0,
+                overflow: 'hidden',
+                visibility: 'hidden',
+                pointerEvents: 'none',
+              }
+        }
+        aria-hidden={!isResultPanelVisible}
+      >
         <QueryEditorResultsPanel
           resultSets={resultSets}
           activeResultKey={activeResultKey}
@@ -5488,7 +5531,7 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
           resultsClearedByLowMemory={Boolean(tab.resultsCleared && !loading && resultSets.length === 0)}
           onRerunQuery={requestRun}
         />
-      )}
+      </div>
 
       <div
         ref={sqlExecutionChooserOverlayRef}

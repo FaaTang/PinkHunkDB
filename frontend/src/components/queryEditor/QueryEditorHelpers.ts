@@ -32,8 +32,8 @@ const QUERY_LOCATOR_METADATA_TIMEOUT_MS = 1500;
 const SQLSERVER_MESSAGE_PREFIX_RE = /^\s*mssql:/i;
 
 /**
- * 首次展开结果区时，按当前编辑器壳高度推一个分割高度，
- * 避免从「占满主区」突然落到默认 300px 造成整窗闪一下。
+ * 用户拖过分隔条后，再次展开结果区时恢复像素高度。
+ * 未拖过时不要用像素种子：应保持 flex 分流，避免 flex↔固定高度切换把 Monaco 整块拽一下。
  */
 export const resolveSeededEditorHeightForResultsPanel = (
   currentShellHeight: number,
@@ -42,7 +42,8 @@ export const resolveSeededEditorHeightForResultsPanel = (
   if (!Number.isFinite(currentShellHeight) || currentShellHeight <= 120) {
     return null;
   }
-  return clampHeight(Math.round(currentShellHeight * 0.55));
+  const reservedResultsHeight = Math.min(280, Math.max(160, Math.round(currentShellHeight * 0.28)));
+  return clampHeight(Math.round(currentShellHeight - reservedResultsHeight));
 };
 
 /**

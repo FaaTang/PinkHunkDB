@@ -229,7 +229,9 @@ export const revealSqlExecutionHighlightInEditor = (
       : end.column
   );
   const range = new monaco.Range(start.lineNumber, start.column, end.lineNumber, endColumn);
-  editor.revealRangeInCenterIfOutsideViewport?.(range);
+  // 只用近距滚动，避免 InCenter 把编辑器猛地拽一下造成查询 tab 晃动。
+  editor.revealRangeNearTopIfOutsideViewport?.(range)
+    || editor.revealRange?.(range);
 };
 
 const SqlExecutionChooserPanel: React.FC<SqlExecutionChooserPanelProps> = ({
