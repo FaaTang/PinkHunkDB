@@ -241,16 +241,22 @@ const QueryEditorToolbar: React.FC<QueryEditorToolbarProps> = ({
             {t("query_editor.action.run")}
           </Button>
         </Tooltip>
-        {loading && (
-          <Button
-            type="primary"
-            danger
-            icon={<StopOutlined />}
-            onClick={onCancel}
-          >
-            {t("query_editor.action.stop")}
-          </Button>
-        )}
+        {/* 始终占位，避免 loading 时突然插入 Stop 导致 Acrylic 窗口闪一下 */}
+        <Button
+          type="primary"
+          danger
+          icon={<StopOutlined />}
+          onClick={onCancel}
+          disabled={!loading}
+          aria-hidden={!loading}
+          tabIndex={loading ? 0 : -1}
+          style={{
+            visibility: loading ? 'visible' : 'hidden',
+            pointerEvents: loading ? 'auto' : 'none',
+          }}
+        >
+          {t("query_editor.action.stop")}
+        </Button>
       </div>
       {pendingTransactionToolbar}
       <div

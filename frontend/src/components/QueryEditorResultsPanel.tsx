@@ -62,7 +62,7 @@ const isAffectedRowsResult = (result: QueryEditorResultSet): boolean =>
 const QueryEditorResultsPanel: React.FC<QueryEditorResultsPanelProps> = ({
     resultSets,
     activeResultKey,
-    loading,
+    loading: _queryRunning,
     executionError,
     sqlLogCount,
     darkMode,
@@ -351,7 +351,9 @@ const QueryEditorResultsPanel: React.FC<QueryEditorResultsPanelProps> = ({
                     <DataGrid
                         data={rs.rows}
                         columnNames={rs.columns}
-                        loading={loading || rs.page?.loading === true}
+                        // 主查询执行中不要给整表盖 Ant Design loading 遮罩：
+                        // Windows Acrylic 透明窗下会表现为整窗闪一下。工具栏 Run/Stop 已有反馈。
+                        loading={rs.page?.loading === true}
                         tableName={rs.tableName}
                         exportScope="queryResult"
                         resultSql={rs.exportSql || rs.sql}

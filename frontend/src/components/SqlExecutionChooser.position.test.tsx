@@ -73,5 +73,14 @@ describe('SqlExecutionChooser scrollable list', () => {
     expect(source).toContain('gn-sql-execution-chooser-options');
     expect(source).toContain('overflow-y: auto');
     expect(source).toContain("scrollIntoView({ block: 'nearest' })");
+    expect(source).not.toContain('backdrop-filter:');
+  });
+});
+
+describe('QueryEditorResultsPanel loading mask', () => {
+  it('does not cover the data grid with the main query running flag', () => {
+    const source = readFileSync(new URL('./QueryEditorResultsPanel.tsx', import.meta.url), 'utf8');
+    expect(source).toContain('loading={rs.page?.loading === true}');
+    expect(source).not.toContain('loading={loading || rs.page?.loading === true}');
   });
 });

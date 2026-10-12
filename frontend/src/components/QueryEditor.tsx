@@ -347,6 +347,8 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
   const [isResultPanelVisible, setIsResultPanelVisible] = useState(
       () => tab.resultPanelVisible === true
   );
+  const isResultPanelVisibleRef = useRef(isResultPanelVisible);
+  isResultPanelVisibleRef.current = isResultPanelVisible;
   const [formatSettingsOpen, setFormatSettingsOpen] = useState(false);
   const [highlightExecutionSetting, setHighlightExecutionSetting] = useState(false);
   const shortcutOptions = useStore(state => state.shortcutOptions);
@@ -432,36 +434,32 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       setIsResultPanelVisible(tab.resultPanelVisible === true);
   }, [tab.id, tab.resultPanelVisible]);
   const updateResultPanelVisibility = useCallback((visible: boolean) => {
-      if (visible) {
-          setIsResultPanelVisible((wasVisible) => {
-              if (!wasVisible) {
-                  const shellHeight = editorShellRef.current?.getBoundingClientRect().height;
-                  const viewportHeight = Number.isFinite(window.innerHeight) ? window.innerHeight : 800;
-                  const seeded = resolveSeededEditorHeightForResultsPanel(
-                      Number(shellHeight || 0),
-                      (height) => {
-                          const maxHeight = Math.max(100, viewportHeight - 200);
-                          return Math.max(100, Math.min(maxHeight, height));
-                      },
-                  );
-                  if (seeded !== null) {
-                      pendingEditorHeightRef.current = seeded;
-                      setEditorHeight(seeded);
-                      if (editorShellRef.current) {
-                          editorShellRef.current.style.height = `${seeded}px`;
-                      }
-                  }
+      if (visible && !isResultPanelVisibleRef.current) {
+          const shellHeight = editorShellRef.current?.getBoundingClientRect().height;
+          const viewportHeight = Number.isFinite(window.innerHeight) ? window.innerHeight : 800;
+          const seeded = resolveSeededEditorHeightForResultsPanel(
+              Number(shellHeight || 0),
+              (height) => {
+                  const maxHeight = Math.max(100, viewportHeight - 200);
+                  return Math.max(100, Math.min(maxHeight, height));
+              },
+          );
+          if (seeded !== null) {
+              pendingEditorHeightRef.current = seeded;
+              setEditorHeight(seeded);
+              if (editorShellRef.current) {
+                  editorShellRef.current.style.height = `${seeded}px`;
               }
-              return true;
-          });
-      } else {
-          setIsResultPanelVisible(false);
+          }
       }
+      isResultPanelVisibleRef.current = visible;
+      setIsResultPanelVisible(visible);
       updateQueryTabDraft(tab.id, { resultPanelVisible: visible });
   }, [tab.id, updateQueryTabDraft]);
   const toggleResultPanelVisibility = useCallback(() => {
       setIsResultPanelVisible((previousVisible) => {
           const nextVisible = !previousVisible;
+          isResultPanelVisibleRef.current = nextVisible;
           updateQueryTabDraft(tab.id, { resultPanelVisible: nextVisible });
           return nextVisible;
       });
@@ -4551,6 +4549,7 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
           }
           event.preventDefault();
           event.stopPropagation();
+          event.stopImmediatePropagation();
           requestRun();
       };
 
