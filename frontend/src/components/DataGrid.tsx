@@ -74,6 +74,7 @@ import {
     pickRowsForClipboard,
 } from './dataGridClipboardExport';
 import { applyNoAutoCapAttributesWithin, noAutoCapInputProps } from '../utils/inputAutoCap';
+import { tryFormatJsonPreservingNumberLiterals } from '../utils/jsonFormat';
 import { DEFAULT_SHORTCUT_OPTIONS, getShortcutPlatform, resolveShortcutDisplay } from '../utils/shortcuts';
 import {
     TEMPORAL_FORMATS,
@@ -1753,13 +1754,12 @@ const DataGrid: React.FC<DataGridProps> = ({
 
   const handleFormatJsonInEditor = useCallback(() => {
       if (!cellEditorIsJson) return;
-      try {
-          const obj = JSON.parse(cellEditorValue);
-          setCellEditorValue(JSON.stringify(obj, null, 2));
-      } catch (e: any) {
-          const rawErrorMessage = e?.message || String(e);
-          void message.error(translateDataGrid('data_grid.json_editor.invalid_format', { error: rawErrorMessage }));
+      const result = tryFormatJsonPreservingNumberLiterals(cellEditorValue);
+      if (!result.ok) {
+          void message.error(translateDataGrid('data_grid.json_editor.invalid_format', { error: result.error }));
+          return;
       }
+      setCellEditorValue(result.text);
   }, [cellEditorIsJson, cellEditorValue, translateDataGrid]);
 
   const openVirtualInlineEditor = useCallback((record: Item, dataIndex: string, title: React.ReactNode) => {
@@ -2114,13 +2114,12 @@ const DataGrid: React.FC<DataGridProps> = ({
   }, [canModifyData, cellContextMenu.record, openRowEditorByKey, rowKeyStr]);
 
   const handleFormatJsonEditor = useCallback(() => {
-      try {
-          const parsed = JSON.parse(jsonEditorValue);
-          setJsonEditorValue(JSON.stringify(parsed, null, 2));
-      } catch (e: any) {
-          const rawErrorMessage = e?.message || String(e);
-          void message.error(translateDataGrid('data_grid.json_editor.invalid_format', { error: rawErrorMessage }));
+      const result = tryFormatJsonPreservingNumberLiterals(jsonEditorValue);
+      if (!result.ok) {
+          void message.error(translateDataGrid('data_grid.json_editor.invalid_format', { error: result.error }));
+          return;
       }
+      setJsonEditorValue(result.text);
   }, [jsonEditorValue, translateDataGrid]);
 
   const applyJsonEditor = useCallback(() => {

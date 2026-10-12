@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { tryFormatJsonPreservingNumberLiterals } from '../utils/jsonFormat';
+
 type GridRecord = Record<string, any>;
 
 export interface DataGridFocusedCellInfo {
@@ -58,13 +60,13 @@ export const useDataGridPreviewPanel = ({
 
   const handleDataPanelFormatJson = React.useCallback((onError: (message: string) => void) => {
     if (!dataPanelIsJson) return;
-    try {
-      const obj = JSON.parse(dataPanelValue);
-      setDataPanelValue(JSON.stringify(obj, null, 2));
-      dataPanelDirtyRef.current = true;
-    } catch (error: any) {
-      onError(error?.message || String(error));
+    const result = tryFormatJsonPreservingNumberLiterals(dataPanelValue);
+    if (!result.ok) {
+      onError(result.error);
+      return;
     }
+    setDataPanelValue(result.text);
+    dataPanelDirtyRef.current = true;
   }, [dataPanelIsJson, dataPanelValue]);
 
   const toggleDataPanel = React.useCallback(() => {
