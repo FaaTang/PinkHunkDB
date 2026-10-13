@@ -270,8 +270,8 @@ body[data-ui-version="v2"] .gn-v2-query-toolbar-run-action.ant-btn .anticon {
 }
 
 body[data-ui-version="v2"] .gn-v2-query-monaco-shell {
-  /* 把 Monaco 内部重排限制在壳内；不用 contain:size，避免 flex 子项被算成 0 高 */
-  contain: layout;
+  /* 仅保留 flex 收缩所需 min-height；不要 contain:layout，
+     否则 Monaco fixedOverflowWidgets 的补全框会按视口坐标却相对壳定位，漂到右下角。 */
   min-height: 0;
 }
 
