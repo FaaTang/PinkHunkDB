@@ -75,6 +75,17 @@ describe('SqlExecutionChooser scrollable list', () => {
     expect(source).toContain("scrollIntoView({ block: 'nearest' })");
     expect(source).not.toContain('backdrop-filter:');
   });
+
+  it('avoids WebView2 flash triggers when the chooser opens', () => {
+    const source = readFileSync(new URL('./SqlExecutionChooser.tsx', import.meta.url), 'utf8');
+    // 打开时不要抢 Monaco 焦点（Acrylic 下焦点切换会整窗闪）
+    expect(source).not.toContain('panelRef.current?.focus()');
+    // 不要在 is-open 时把整层 overlay 切成 pointer-events:auto
+    expect(source).not.toContain('.gn-sql-execution-chooser-overlay.is-open');
+    expect(source).toContain('gn-sql-execution-chooser-host is-positioning');
+    expect(source).toContain("applyHighlight({ scroll: false })");
+    expect(source).toContain('{ scroll: options?.scroll ?? initialHighlightReady }');
+  });
 });
 
 describe('QueryEditorResultsPanel loading mask', () => {

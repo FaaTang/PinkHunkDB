@@ -108,19 +108,15 @@ const ensureSqlExecutionChooserHighlightStyle = () => {
     document.head.appendChild(styleNode);
   }
 
-  if (!document.getElementById(SQL_EXECUTION_CHOOSER_OVERLAY_STYLE_ID)) {
-    const overlayStyleNode = document.createElement('style');
-    overlayStyleNode.id = SQL_EXECUTION_CHOOSER_OVERLAY_STYLE_ID;
-    overlayStyleNode.textContent = `
+  const overlayCss = `
 .gn-sql-execution-chooser-overlay {
   position: absolute;
   inset: 0;
   z-index: 10000;
+  /* 始终 none：子节点 host/backdrop 自己开 pointer-events。
+     打开时切整层 pointer-events 会在 WebView2 Acrylic 下整窗闪一下。 */
   pointer-events: none;
   overflow: visible;
-}
-.gn-sql-execution-chooser-overlay.is-open {
-  pointer-events: auto;
 }
 .gn-sql-execution-chooser-backdrop {
   position: absolute;
@@ -132,6 +128,9 @@ const ensureSqlExecutionChooserHighlightStyle = () => {
   position: absolute;
   pointer-events: auto;
   z-index: 1;
+}
+.gn-sql-execution-chooser-host.is-positioning {
+  visibility: hidden;
 }
 .gn-sql-execution-chooser {
   /* 避免 backdrop-filter：WebView2 上容易整窗闪一下 */
@@ -154,8 +153,13 @@ const ensureSqlExecutionChooserHighlightStyle = () => {
   cursor: grabbing;
 }
 `;
+  let overlayStyleNode = document.getElementById(SQL_EXECUTION_CHOOSER_OVERLAY_STYLE_ID) as HTMLStyleElement | null;
+  if (!overlayStyleNode) {
+    overlayStyleNode = document.createElement('style');
+    overlayStyleNode.id = SQL_EXECUTION_CHOOSER_OVERLAY_STYLE_ID;
     document.head.appendChild(overlayStyleNode);
   }
+  overlayStyleNode.textContent = overlayCss;
 };
 
 export const positionSqlExecutionChooserHost = (
@@ -217,6 +221,7 @@ export const revealSqlExecutionHighlightInEditor = (
   highlightStart: number,
   highlightEnd: number,
   sqlText: string,
+  options?: { scroll?: boolean },
 ): void => {
   if (!editor || !monaco || !sqlText) {
     return;
@@ -229,6 +234,9 @@ export const revealSqlExecutionHighlightInEditor = (
       : end.column
   );
   const range = new monaco.Range(start.lineNumber, start.column, end.lineNumber, endColumn);
+  if (options?.scroll === false) {
+    return;
+  }
   // 只用近距滚动，避免 InCenter 把编辑器猛地拽一下造成查询 tab 晃动。
   editor.revealRangeNearTopIfOutsideViewport?.(range)
     || editor.revealRange?.(range);
@@ -304,9 +312,8 @@ const SqlExecutionChooserPanel: React.FC<SqlExecutionChooserPanelProps> = ({
     }
   }, [handleConfirm, handleMoveSelection, onCancel]);
 
-  useEffect(() => {
-    panelRef.current?.focus();
-  }, []);
+  // 不在打开时抢 Monaco 焦点：WebView2 Acrylic 下焦点切换会整窗闪一下。
+  // 方向键 / Enter / Esc 仍由 mount 侧 editor.onKeyDown 处理。
 
   useEffect(() => {
     const selectedButton = panelRef.current?.querySelector(
@@ -323,6 +330,10 @@ const SqlExecutionChooserPanel: React.FC<SqlExecutionChooserPanelProps> = ({
         key={option.id}
         data-option-id={option.id}
         aria-pressed={isSelected}
+        onMouseDown={(event) => {
+          // 阻止按钮抢焦点：保持 Monaco 焦点，避免 WebView2 Acrylic 整窗闪一下。
+          event.preventDefault();
+        }}
         onClick={() => onSelectedIdChange(option.id)}
         onDoubleClick={(event) => {
           event.preventDefault();
@@ -459,6 +470,9 @@ const SqlExecutionChooserPanel: React.FC<SqlExecutionChooserPanelProps> = ({
         <button
           type="button"
           className="gn-sql-execution-chooser-settings-link"
+          onMouseDown={(event) => {
+            event.preventDefault();
+          }}
           onKeyDown={handleSettingsKeyDown}
           onClick={(event) => {
             event.preventDefault();
@@ -491,13 +505,14 @@ export function mountSqlExecutionChooser(
 
   ensureSqlExecutionChooserHighlightStyle();
   const domNode = document.createElement('div');
-  domNode.className = 'gn-sql-execution-chooser-host';
+  domNode.className = 'gn-sql-execution-chooser-host is-positioning';
   const overlayRoot = props.overlayRoot || null;
   const useOverlayRoot = !!overlayRoot;
   let backdropNode: HTMLDivElement | null = null;
   const openedAt = performance.now();
   const OUTSIDE_DISMISS_GUARD_MS = 200;
   let handleOutsidePointerDown: ((event: MouseEvent) => void) | null = null;
+  let initialHighlightReady = false;
   if (useOverlayRoot) {
     overlayRoot.classList.add('is-open');
     backdropNode = document.createElement('div');
@@ -585,7 +600,7 @@ export function mountSqlExecutionChooser(
 
   const getSelectedOption = () => resolveSelectedOption(props.options, currentSelectedId);
 
-  const applyHighlight = () => {
+  const applyHighlight = (options?: { scroll?: boolean }) => {
     if (!editor?.deltaDecorations) return;
     const selected = getSelectedOption();
     const model = editor.getModel?.();
@@ -611,13 +626,16 @@ export function mountSqlExecutionChooser(
         },
       },
     ]);
+    // 首次打开不滚动：光标本就在视野内，reveal 会整块拽一下像闪屏。
     revealSqlExecutionHighlightInEditor(
       editor,
       monaco,
       selected.highlightStart,
       selected.highlightEnd,
       sqlText,
+      { scroll: options?.scroll ?? initialHighlightReady },
     );
+    initialHighlightReady = true;
   };
 
   const updateSelected = (nextId: SqlExecutionChooserOptionId) => {
@@ -625,7 +643,7 @@ export function mountSqlExecutionChooser(
     currentSelectedId = nextId;
     props.onSelectedIdChange(nextId);
     renderChooser();
-    applyHighlight();
+    applyHighlight({ scroll: true });
   };
 
   const confirmSelected = () => {
@@ -647,6 +665,11 @@ export function mountSqlExecutionChooser(
     },
   };
 
+  const revealHostAfterPosition = () => {
+    if (disposed) return;
+    domNode.classList.remove('is-positioning');
+  };
+
   const updateOverlayPosition = () => {
     if (!useOverlayRoot || !overlayRoot || disposed || userPositioned) return;
     positionSqlExecutionChooserHost(editor, domNode, overlayRoot, monaco);
@@ -655,8 +678,13 @@ export function mountSqlExecutionChooser(
   const scheduleOverlayPosition = () => {
     if (!useOverlayRoot) return;
     requestAnimationFrame(() => {
+      if (disposed) return;
+      updateOverlayPosition();
+      // 再等一帧拿到真实尺寸后显示，避免先闪在错误位置再跳过去。
       requestAnimationFrame(() => {
+        if (disposed) return;
         updateOverlayPosition();
+        revealHostAfterPosition();
       });
     });
   };
@@ -710,8 +738,9 @@ export function mountSqlExecutionChooser(
     updateOverlayPosition();
   } else {
     editor.addContentWidget?.(widget);
+    revealHostAfterPosition();
   }
-  applyHighlight();
+  applyHighlight({ scroll: false });
 
   const editorKeydownDisposable = editor.onKeyDown?.((event: any) => {
     if (!handleKey(event)) return;
