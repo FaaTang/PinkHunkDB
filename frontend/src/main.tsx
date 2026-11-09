@@ -223,6 +223,9 @@ if (typeof window !== 'undefined' && (!(window as any).go?.app?.App || !(window 
             App: {
                 CheckUpdate: async () => ({ success: false }),
                 DownloadUpdate: async () => ({ success: false }),
+                PauseUpdateDownload: async () => ({ success: false }),
+                ResumeUpdateDownload: async () => ({ success: false }),
+                CancelUpdateDownload: async () => ({ success: false }),
                 SetLanguage: async () => null,
                 GetSavedConnections: async () => cloneBrowserMockValue(mockConnections),
                 GetEditableSavedConnection: async (id: string) => {

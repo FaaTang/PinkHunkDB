@@ -402,6 +402,20 @@ describe('Sidebar locate toolbar', () => {
     expect(source).toContain('toggleSidebarTreeNodeExpanded');
   });
 
+  it('opens tables overview from the tables group context menu instead of single click', () => {
+    const source = readSidebarSource();
+    const handlersSource = readSourceFile('./sidebar/useSidebarV2ActionHandlers.tsx');
+    const menuSource = readSourceFile('./V2TableContextMenu.tsx');
+
+    expect(source).toContain('openTablesObjectGroupOverview');
+    expect(source).not.toContain('clickTimerRef');
+    expect(source).not.toContain('单击延迟打开表概览');
+    expect(handlersSource).toContain("case 'open-overview'");
+    expect(handlersSource).toContain('openTablesObjectGroupOverview(node)');
+    expect(menuSource).toContain("action: 'open-overview'");
+    expect(menuSource).toContain("t('sidebar.v2_table_group_menu.open_overview')");
+  });
+
   it('parses v2 command search prefixes into real search modes', () => {
     expect(parseV2CommandSearchQuery('@ payment_order')).toMatchObject({
       mode: 'object',
@@ -2712,12 +2726,13 @@ describe('Sidebar locate toolbar', () => {
       count: '15',
       sort: t('sidebar.v2_table_group_menu.sort_frequency'),
     }));
+    expect(markup).toContain(t('sidebar.v2_table_group_menu.open_overview'));
     expect(markup).toContain(t('sidebar.menu.create_table'));
     expect(markup).toContain(t('data_grid.context_menu.sort_section'));
     expect(markup).toContain(t('sidebar.menu.sort_by_name'));
     expect(markup).toContain(t('sidebar.menu.sort_by_frequency'));
     expect(markup).toContain(t('data_grid.context_menu.current_marker'));
-    ['? ? tables', '表 · tables', '15 张表', '当前按使用频率排序', '新建表'].forEach((rawSnippet) => {
+    ['? ? tables', '表 · tables', '15 张表', '当前按使用频率排序', '打开表概览', '新建表'].forEach((rawSnippet) => {
       expect(markup).not.toContain(rawSnippet);
     });
 

@@ -301,11 +301,21 @@ export const isSidebarTreeDoubleClickGesture = (input: {
 };
 
 /**
+ * isSidebarTablesObjectGroup 判断节点是否为 Tables 对象分组（双击打开表概览）。
+ */
+export const isSidebarTablesObjectGroup = (
+  node: Pick<SidebarNodeLike, 'type' | 'dataRef'> | null | undefined,
+): boolean => (
+  node?.type === 'object-group'
+  && String(node?.dataRef?.groupKey || '') === 'tables'
+);
+
+/**
  * shouldToggleSidebarTreeNodeOnDoubleClick 判断双击应切换展开/折叠，而非打开对象页签。
  * 与 Sidebar onDoubleClick 中「打开 tab 后 return」的节点类型保持互斥。
  */
 export const shouldToggleSidebarTreeNodeOnDoubleClick = (
-  node: Pick<SidebarNodeLike, 'type' | 'isLeaf'> | null | undefined,
+  node: Pick<SidebarNodeLike, 'type' | 'isLeaf' | 'dataRef'> | null | undefined,
 ): boolean => {
   if (!node || node.isLeaf === true) return false;
   const type = String(node.type || '');

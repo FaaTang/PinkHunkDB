@@ -23,12 +23,14 @@ export type UpdateInfo = {
 };
 
 type UpdateDownloadProgressEvent = {
-  status?: 'start' | 'downloading' | 'done' | 'error';
+  status?: 'start' | 'downloading' | 'paused' | 'done' | 'error' | 'cancelled';
   percent?: number;
   downloaded?: number;
   total?: number;
   message?: string;
 };
+
+type UpdateDownloadProgressStatus = 'idle' | 'start' | 'downloading' | 'paused' | 'done' | 'error' | 'cancelled';
 
 type UpdateDownloadResultData = {
   info?: UpdateInfo;
@@ -48,12 +50,16 @@ type UseAppUpdateManagerOptions = {
 const createEmptyDownloadProgress = () => ({
   open: false,
   version: '',
-  status: 'idle' as 'idle' | 'start' | 'downloading' | 'done' | 'error',
+  status: 'idle' as UpdateDownloadProgressStatus,
   percent: 0,
   downloaded: 0,
   total: 0,
   message: '',
 });
+
+const isUpdateDownloadActiveStatus = (status: UpdateDownloadProgressStatus): boolean => (
+  status === 'start' || status === 'downloading' || status === 'paused'
+);
 
 export const useAppUpdateManager = ({
   isMacRuntime,
@@ -171,6 +177,14 @@ export const useAppUpdateManager = ({
         void message.success({ content: t('app.about.message.download_completed'), duration: 2 });
       }
       setAboutUpdateStatus(formatAboutUpdateStatus({ ...info, downloaded: true }));
+    } else if (res?.data?.cancelled) {
+      setUpdateDownloadProgress((prev) => ({
+        ...prev,
+        status: 'cancelled',
+        message: '',
+        open: true,
+      }));
+      void message.info({ content: t('app.about.message.download_cancelled'), duration: 2 });
     } else {
       setUpdateDownloadProgress((prev) => ({
         ...prev,
@@ -181,6 +195,54 @@ export const useAppUpdateManager = ({
     }
   }, [formatAboutUpdateStatus, isMacRuntime, t]);
 
+  const pauseUpdateDownload = useCallback(async () => {
+    let res: any = null;
+    try {
+      res = await (window as any).go.app.App.PauseUpdateDownload();
+    } catch (e) {
+      console.warn('Wails API: PauseUpdateDownload unavailable', e);
+    }
+    if (!res?.success) {
+      void message.error(t('app.about.message.pause_download_failed_with_error', { error: res?.message || t('common.unknown') }));
+      return;
+    }
+    setUpdateDownloadProgress((prev) => (
+      isUpdateDownloadActiveStatus(prev.status)
+        ? { ...prev, status: 'paused' }
+        : prev
+    ));
+  }, [t]);
+
+  const resumeUpdateDownload = useCallback(async () => {
+    let res: any = null;
+    try {
+      res = await (window as any).go.app.App.ResumeUpdateDownload();
+    } catch (e) {
+      console.warn('Wails API: ResumeUpdateDownload unavailable', e);
+    }
+    if (!res?.success) {
+      void message.error(t('app.about.message.resume_download_failed_with_error', { error: res?.message || t('common.unknown') }));
+      return;
+    }
+    setUpdateDownloadProgress((prev) => (
+      prev.status === 'paused'
+        ? { ...prev, status: 'downloading' }
+        : prev
+    ));
+  }, [t]);
+
+  const cancelUpdateDownload = useCallback(async () => {
+    let res: any = null;
+    try {
+      res = await (window as any).go.app.App.CancelUpdateDownload();
+    } catch (e) {
+      console.warn('Wails API: CancelUpdateDownload unavailable', e);
+    }
+    if (!res?.success) {
+      void message.error(t('app.about.message.cancel_download_failed_with_error', { error: res?.message || t('common.unknown') }));
+    }
+  }, [t]);
+
   const showUpdateDownloadProgress = useCallback(() => {
     setUpdateDownloadProgress((prev) => {
       if (prev.status === 'idle') return prev;
@@ -190,8 +252,8 @@ export const useAppUpdateManager = ({
 
   const hideUpdateDownloadProgress = useCallback(() => {
     setUpdateDownloadProgress((prev) => {
-      // 下载失败后关闭进度窗时回到 idle，About 才能再次显示「下载更新」而非卡住的「下载进度」
-      if (prev.status === 'error') {
+      // 下载失败/取消后关闭进度窗时回到 idle，About 才能再次显示「下载更新」而非卡住的「下载进度」
+      if (prev.status === 'error' || prev.status === 'cancelled') {
         return {
           ...prev,
           open: false,
@@ -217,12 +279,11 @@ export const useAppUpdateManager = ({
     }
     return String(lastUpdateInfo?.downloadPath || '').trim();
   }, [lastUpdateInfo]);
-  // 仅「进行中」才替换下载按钮；error/done 应允许重试或安装，不能锁死成「下载进度」
+  // 仅「进行中/已暂停」才替换下载按钮；error/done/cancelled 应允许重试或安装，不能锁死成「下载进度」
   const isBackgroundProgressForLatestUpdate = Boolean(lastUpdateInfo?.hasUpdate)
     && Boolean(lastUpdateInfo?.latestVersion)
     && updateDownloadProgress.version === lastUpdateInfo?.latestVersion
-    && (updateDownloadProgress.status === 'start'
-      || updateDownloadProgress.status === 'downloading');
+    && isUpdateDownloadActiveStatus(updateDownloadProgress.status);
   const canShowProgressEntry = (isLatestUpdateDownloaded || isBackgroundProgressForLatestUpdate)
     && updateInstallTriggeredVersionRef.current !== (lastUpdateInfo?.latestVersion || null);
 
@@ -302,7 +363,7 @@ export const useAppUpdateManager = ({
           downloadPath: downloadPath || undefined,
         };
         setUpdateDownloadProgress((prev) => {
-          if (prev.status === 'start' || prev.status === 'downloading') {
+          if (isUpdateDownloadActiveStatus(prev.status)) {
             return prev;
           }
           const total = info.assetSize || prev.total || 0;
@@ -327,7 +388,7 @@ export const useAppUpdateManager = ({
           updateDownloadMetaRef.current = null;
         }
         setUpdateDownloadProgress((prev) => {
-          if (prev.status === 'start' || prev.status === 'downloading') {
+          if (isUpdateDownloadActiveStatus(prev.status)) {
             return prev;
           }
           return {
@@ -363,7 +424,7 @@ export const useAppUpdateManager = ({
       }
     } else if (!silent) {
       setUpdateDownloadProgress((prev) => {
-        if (prev.status === 'start' || prev.status === 'downloading') {
+        if (isUpdateDownloadActiveStatus(prev.status)) {
           return prev;
         }
         return createEmptyDownloadProgress();
@@ -374,7 +435,7 @@ export const useAppUpdateManager = ({
       setAboutUpdateStatus(text);
     } else if (silent && aboutOpen) {
       setUpdateDownloadProgress((prev) => {
-        if (prev.status === 'start' || prev.status === 'downloading') {
+        if (isUpdateDownloadActiveStatus(prev.status)) {
           return prev;
         }
         return createEmptyDownloadProgress();
@@ -444,8 +505,13 @@ export const useAppUpdateManager = ({
       offDownloadProgress = EventsOn('update:download-progress', (event: UpdateDownloadProgressEvent) => {
         if (!event) return;
         const status = event.status || 'downloading';
-        const nextStatus: 'idle' | 'start' | 'downloading' | 'done' | 'error' =
-          status === 'start' || status === 'downloading' || status === 'done' || status === 'error'
+        const nextStatus: UpdateDownloadProgressStatus =
+          status === 'start'
+          || status === 'downloading'
+          || status === 'paused'
+          || status === 'done'
+          || status === 'error'
+          || status === 'cancelled'
             ? status
             : 'downloading';
         const downloaded = typeof event.downloaded === 'number' ? event.downloaded : 0;
@@ -455,12 +521,12 @@ export const useAppUpdateManager = ({
           : (total > 0 ? (downloaded / total) * 100 : 0);
         const percent = Math.max(0, Math.min(100, percentRaw));
         setUpdateDownloadProgress((prev) => ({
-          open: prev.open,
+          open: prev.open || nextStatus === 'cancelled',
           version: prev.version,
           status: nextStatus,
           percent,
           downloaded,
-          total,
+          total: total > 0 ? total : prev.total,
           message: String(event.message || ''),
         }));
       });
@@ -479,6 +545,7 @@ export const useAppUpdateManager = ({
     aboutUpdateDownloadPath,
     aboutUpdateStatus,
     canShowProgressEntry,
+    cancelUpdateDownload,
     checkForUpdates,
     downloadUpdate,
     formatBytes,
@@ -491,6 +558,8 @@ export const useAppUpdateManager = ({
     markUpdateProgressDismissed,
     disableAutoUpdatePrompt,
     openDownloadedUpdatePackage,
+    pauseUpdateDownload,
+    resumeUpdateDownload,
     skipCurrentUpdateVersion,
     setIsAboutOpen,
     showUpdateDownloadProgress,

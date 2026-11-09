@@ -59,6 +59,7 @@ import {
   resolveSidebarNodeDisplayLabel,
   resolveSidebarObjectNameForContext,
   resolveSidebarTreeSelectState,
+  isSidebarTablesObjectGroup,
   isSidebarTreeDoubleClickGesture,
   shouldToggleSidebarTreeNodeOnDoubleClick,
   shouldHandleSidebarTreeCopyShortcut,
@@ -90,6 +91,7 @@ export {
   resolveSidebarNodeDisplayLabel,
   resolveSidebarObjectNameForContext,
   resolveSidebarTreeSelectState,
+  isSidebarTablesObjectGroup,
   isSidebarTreeDoubleClickGesture,
   shouldToggleSidebarTreeNodeOnDoubleClick,
   shouldHandleSidebarTreeCopyShortcut,
@@ -594,7 +596,6 @@ const Sidebar: React.FC<{
   const loadingNodesRef = useRef<Set<string>>(new Set());
   const databaseTreeTouchedAtRef = useRef<Record<string, number>>({});
   const pruneLoadedDatabaseTreesRef = useRef<() => void>(() => {});
-  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const treeClickGestureRef = useRef<{ key: string; at: number }>({ key: '', at: 0 });
   const treeExpandToggleGuardRef = useRef<{ key: string; at: number }>({ key: '', at: 0 });
   const expandedKeysRef = useRef<React.Key[]>([]);
@@ -1683,6 +1684,23 @@ const Sidebar: React.FC<{
       });
   };
 
+  const openTablesObjectGroupOverview = (node: any) => {
+      if (!isSidebarTablesObjectGroup(node)) return;
+      const { id, dbName: gDbName, schemaName } = node.dataRef || {};
+      if (!id || !gDbName) return;
+      addTab({
+          id: `table-overview-${id}-${gDbName}${schemaName ? `-${schemaName}` : ''}`,
+          title: t('sidebar.tab.table_overview', {
+              database: gDbName,
+              schema: schemaName ? ` (${schemaName})` : '',
+          }),
+          type: 'table-overview' as any,
+          connectionId: id,
+          dbName: gDbName,
+          schemaName,
+      } as any);
+  };
+
   const onSelect = (keys: React.Key[], info: any) => {
       if (info?.node?.type === 'v2-table-section') {
           return;
@@ -1726,10 +1744,6 @@ const Sidebar: React.FC<{
       });
       treeClickGestureRef.current = { key: clickKey, at: clickAt };
       if (isDoubleClickSelect && shouldToggleSidebarTreeNodeOnDoubleClick(info?.node)) {
-          if (clickTimerRef.current) {
-              clearTimeout(clickTimerRef.current);
-              clickTimerRef.current = null;
-          }
           toggleSidebarTreeNodeExpanded(info.node);
           // 消费掉双击手势，避免第三次点击再次被识别为双击而立刻折叠
           treeClickGestureRef.current = { key: '', at: 0 };
@@ -1767,7 +1781,7 @@ const Sidebar: React.FC<{
           setActiveContext({ connectionId: dataRef.id, dbName: `db${dataRef.redisDB}` });
       }
 
-      // 多选时不触发打开设计页 / 表概览等副作用
+      // 多选时不触发打开设计页等副作用
       if (nextKeys.length !== 1) {
           return;
       }
@@ -1776,25 +1790,6 @@ const Sidebar: React.FC<{
       else if (type === 'folder-indexes') openDesign(info.node, 'indexes', false);
       else if (type === 'folder-fks') openDesign(info.node, 'foreignKeys', false);
       else if (type === 'folder-triggers') openDesign(info.node, 'triggers', false);
-      else if (type === 'object-group' && dataRef?.groupKey === 'tables') {
-          // 单击延迟打开表概览，双击时会取消此定时器
-          if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-          const { id, dbName: gDbName, schemaName } = dataRef;
-          clickTimerRef.current = setTimeout(() => {
-              clickTimerRef.current = null;
-              addTab({
-                  id: `table-overview-${id}-${gDbName}${schemaName ? `-${schemaName}` : ''}`,
-                  title: t('sidebar.tab.table_overview', {
-                      database: gDbName,
-                      schema: schemaName ? ` (${schemaName})` : '',
-                  }),
-                  type: 'table-overview' as any,
-                  connectionId: id,
-                  dbName: gDbName,
-                  schemaName,
-              } as any);
-          }, 250);
-      }
   };
 
   const onExpand = (newExpandedKeys: React.Key[], info?: any) => {
@@ -1831,11 +1826,6 @@ const Sidebar: React.FC<{
   };
 
   const onDoubleClick = (e: any, node: any) => {
-      // 双击时取消单击延迟动作（如表概览打开），让双击只触发展开/折叠
-      if (clickTimerRef.current) {
-          clearTimeout(clickTimerRef.current);
-          clickTimerRef.current = null;
-      }
       const { type, dataRef, key: nodeKey } = node;
       if (type === 'v2-table-section') {
           return;
@@ -2271,6 +2261,7 @@ const Sidebar: React.FC<{
       extractObjectName,
       openDesign,
       openNewTableDesign,
+      openTablesObjectGroupOverview,
       onDoubleClick,
       openMessagePublishModal,
       openTableDdlInDesigner,

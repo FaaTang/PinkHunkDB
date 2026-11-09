@@ -123,7 +123,7 @@ PinkHunkDB is designed for developers and DBAs who need a unified desktop experi
 
 ### Observability and Update
 - SQL execution logs with timing information.
-- Startup/scheduled/manual update checks.
+- Startup/scheduled/manual update checks; download updates can be paused, resumed, or cancelled.
 - About dialog with version and release notes.
 
 ### UI/UX

@@ -1,12 +1,14 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
 	stdRuntime "runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestFetchLatestUpdateInfoSkipsChecksumWhenCurrentVersionIsAlreadyLatest(t *testing.T) {
@@ -294,5 +296,60 @@ func TestPruneHistoricalUpdateArtifactsRemovesOlderVersions(t *testing.T) {
 func TestParseUpdateStagedDirVersionSupportsTimestampSuffix(t *testing.T) {
 	if got := parseUpdateStagedDirVersion(".PinkHunkDB-update-windows-0.8.2-1710000000000"); got != "0.8.2" {
 		t.Fatalf("unexpected parsed version: %q", got)
+	}
+}
+
+func TestUpdateDownloadControlPauseResumeAndCancel(t *testing.T) {
+	ctrl, cancel := newUpdateDownloadControl(context.Background())
+	defer cancel()
+
+	if !ctrl.Pause() {
+		t.Fatal("expected pause to succeed")
+	}
+	if !ctrl.IsPaused() {
+		t.Fatal("expected control to be paused")
+	}
+	if ctrl.Pause() {
+		t.Fatal("expected second pause to be ignored")
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		done <- ctrl.waitIfPaused()
+	}()
+
+	select {
+	case <-done:
+		t.Fatal("waitIfPaused returned before resume")
+	case <-time.After(80 * time.Millisecond):
+	}
+
+	if !ctrl.Resume() {
+		t.Fatal("expected resume to succeed")
+	}
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("waitIfPaused returned unexpected error: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("waitIfPaused did not unblock after resume")
+	}
+
+	if !ctrl.Pause() {
+		t.Fatal("expected pause after resume to succeed")
+	}
+	cancelDone := make(chan error, 1)
+	go func() {
+		cancelDone <- ctrl.waitIfPaused()
+	}()
+	cancel()
+	select {
+	case err := <-cancelDone:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("expected context.Canceled, got %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("waitIfPaused did not unblock after cancel")
 	}
 }

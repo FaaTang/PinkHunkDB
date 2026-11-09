@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -15,6 +16,7 @@ import (
 	"path/filepath"
 	stdRuntime "runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"GoNavi-Wails/internal/connection"
@@ -37,9 +39,107 @@ var (
 )
 
 type updateState struct {
-	lastCheck   *UpdateInfo
-	downloading bool
-	staged      *stagedUpdate
+	lastCheck        *UpdateInfo
+	downloading      bool
+	downloadCtrl     *updateDownloadControl
+	downloadCancel   context.CancelFunc
+	lastDownloaded   int64
+	lastTotal        int64
+	staged           *stagedUpdate
+}
+
+// updateDownloadControl 控制更新包下载的暂停/恢复与取消。
+type updateDownloadControl struct {
+	ctx    context.Context
+	mu     sync.Mutex
+	cond   *sync.Cond
+	paused bool
+}
+
+func newUpdateDownloadControl(parent context.Context) (*updateDownloadControl, context.CancelFunc) {
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx, cancel := context.WithCancel(parent)
+	ctrl := &updateDownloadControl{ctx: ctx}
+	ctrl.cond = sync.NewCond(&ctrl.mu)
+	return ctrl, func() {
+		cancel()
+		ctrl.mu.Lock()
+		ctrl.paused = false
+		ctrl.cond.Broadcast()
+		ctrl.mu.Unlock()
+	}
+}
+
+func (c *updateDownloadControl) Pause() bool {
+	if c == nil {
+		return false
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.ctx.Err() != nil || c.paused {
+		return false
+	}
+	c.paused = true
+	return true
+}
+
+func (c *updateDownloadControl) Resume() bool {
+	if c == nil {
+		return false
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.ctx.Err() != nil || !c.paused {
+		return false
+	}
+	c.paused = false
+	c.cond.Broadcast()
+	return true
+}
+
+func (c *updateDownloadControl) IsPaused() bool {
+	if c == nil {
+		return false
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.paused
+}
+
+func (c *updateDownloadControl) waitIfPaused() error {
+	if c == nil {
+		return nil
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for c.paused {
+		if err := c.ctx.Err(); err != nil {
+			return err
+		}
+		c.cond.Wait()
+	}
+	return c.ctx.Err()
+}
+
+type controlledReader struct {
+	r    io.Reader
+	ctrl *updateDownloadControl
+}
+
+func (r *controlledReader) Read(p []byte) (int, error) {
+	if r.ctrl != nil {
+		if err := r.ctrl.waitIfPaused(); err != nil {
+			return 0, err
+		}
+		select {
+		case <-r.ctrl.ctx.Done():
+			return 0, r.ctrl.ctx.Err()
+		default:
+		}
+	}
+	return r.r.Read(p)
 }
 
 type UpdateInfo struct {
@@ -226,18 +326,81 @@ func (a *App) DownloadUpdate() connection.QueryResult {
 		a.updateMu.Unlock()
 		return connection.QueryResult{Success: true, Message: a.appText("app.update.backend.message.package_already_downloaded", nil), Data: buildUpdateDownloadResult(*info, staged)}
 	}
+	ctrl, cancel := newUpdateDownloadControl(a.ctx)
 	a.updateState.staged = nil
 	a.updateState.downloading = true
+	a.updateState.downloadCtrl = ctrl
+	a.updateState.downloadCancel = cancel
+	a.updateState.lastDownloaded = 0
+	a.updateState.lastTotal = info.AssetSize
 	a.updateMu.Unlock()
+
+	defer func() {
+		cancel()
+		a.updateMu.Lock()
+		a.updateState.downloading = false
+		a.updateState.downloadCtrl = nil
+		a.updateState.downloadCancel = nil
+		a.updateMu.Unlock()
+	}()
 
 	a.emitUpdateDownloadProgress("start", 0, info.AssetSize, "")
-	result := a.downloadAndStageUpdate(*info)
+	return a.downloadAndStageUpdate(*info, ctrl)
+}
 
+// PauseUpdateDownload 暂停当前更新包下载。
+func (a *App) PauseUpdateDownload() connection.QueryResult {
 	a.updateMu.Lock()
-	a.updateState.downloading = false
+	ctrl := a.updateState.downloadCtrl
+	downloading := a.updateState.downloading
+	downloaded := a.updateState.lastDownloaded
+	total := a.updateState.lastTotal
 	a.updateMu.Unlock()
+	if !downloading || ctrl == nil {
+		return connection.QueryResult{Success: false, Message: a.appText("app.update.backend.message.download_not_active", nil)}
+	}
+	if !ctrl.Pause() {
+		if ctrl.IsPaused() {
+			return connection.QueryResult{Success: true, Message: a.appText("app.update.backend.message.download_paused", nil)}
+		}
+		return connection.QueryResult{Success: false, Message: a.appText("app.update.backend.message.download_not_active", nil)}
+	}
+	a.emitUpdateDownloadProgress("paused", downloaded, total, "")
+	return connection.QueryResult{Success: true, Message: a.appText("app.update.backend.message.download_paused", nil)}
+}
 
-	return result
+// ResumeUpdateDownload 恢复已暂停的更新包下载。
+func (a *App) ResumeUpdateDownload() connection.QueryResult {
+	a.updateMu.Lock()
+	ctrl := a.updateState.downloadCtrl
+	downloading := a.updateState.downloading
+	downloaded := a.updateState.lastDownloaded
+	total := a.updateState.lastTotal
+	a.updateMu.Unlock()
+	if !downloading || ctrl == nil {
+		return connection.QueryResult{Success: false, Message: a.appText("app.update.backend.message.download_not_active", nil)}
+	}
+	if !ctrl.Resume() {
+		if !ctrl.IsPaused() && ctrl.ctx.Err() == nil {
+			return connection.QueryResult{Success: true, Message: a.appText("app.update.backend.message.download_resumed", nil)}
+		}
+		return connection.QueryResult{Success: false, Message: a.appText("app.update.backend.message.download_not_active", nil)}
+	}
+	a.emitUpdateDownloadProgress("downloading", downloaded, total, "")
+	return connection.QueryResult{Success: true, Message: a.appText("app.update.backend.message.download_resumed", nil)}
+}
+
+// CancelUpdateDownload 取消当前更新包下载。
+func (a *App) CancelUpdateDownload() connection.QueryResult {
+	a.updateMu.Lock()
+	cancel := a.updateState.downloadCancel
+	downloading := a.updateState.downloading
+	a.updateMu.Unlock()
+	if !downloading || cancel == nil {
+		return connection.QueryResult{Success: false, Message: a.appText("app.update.backend.message.download_not_active", nil)}
+	}
+	cancel()
+	return connection.QueryResult{Success: true, Message: a.appText("app.update.backend.message.download_cancel_requested", nil)}
 }
 
 func (a *App) InstallUpdateAndRestart() connection.QueryResult {
@@ -348,7 +511,7 @@ func (a *App) openDownloadedUpdatePackage(revealFile bool) connection.QueryResul
 	}
 }
 
-func (a *App) downloadAndStageUpdate(info UpdateInfo) connection.QueryResult {
+func (a *App) downloadAndStageUpdate(info UpdateInfo, ctrl *updateDownloadControl) connection.QueryResult {
 	workspaceDir := strings.TrimSpace(resolveUpdateWorkspaceDir(info.LatestVersion))
 	if workspaceDir == "" {
 		message := a.appText("app.update.backend.message.app_directory_unresolved_download", nil)
@@ -385,16 +548,34 @@ func (a *App) downloadAndStageUpdate(info UpdateInfo) connection.QueryResult {
 
 	// macOS 下载包放在桌面版本目录根级；其他平台继续放在 staging 目录。
 	assetPath := resolveUpdateAssetPath(workspaceDir, stagedDir, info.AssetName)
-	actualHash, err := downloadFileWithHash(info.AssetURL, assetPath, func(downloaded, total int64) {
+	actualHash, err := downloadFileWithHashControlled(info.AssetURL, assetPath, func(downloaded, total int64) {
 		reportTotal := total
 		if reportTotal <= 0 {
 			reportTotal = info.AssetSize
 		}
 		a.emitUpdateDownloadProgress("downloading", downloaded, reportTotal, "")
-	})
+	}, 10*time.Minute, ctrl)
 	if err != nil {
 		_ = os.Remove(assetPath)
 		_ = os.RemoveAll(stagedDir)
+		if errors.Is(err, context.Canceled) {
+			message := a.appText("app.update.backend.message.download_cancelled", nil)
+			a.updateMu.Lock()
+			downloaded := a.updateState.lastDownloaded
+			total := a.updateState.lastTotal
+			a.updateMu.Unlock()
+			if total <= 0 {
+				total = info.AssetSize
+			}
+			a.emitUpdateDownloadProgress("cancelled", downloaded, total, message)
+			return connection.QueryResult{
+				Success: false,
+				Message: message,
+				Data: map[string]any{
+					"cancelled": true,
+				},
+			}
+		}
 		message := a.localizedUpdateError(err)
 		a.emitUpdateDownloadProgress("error", 0, info.AssetSize, message)
 		return connection.QueryResult{Success: false, Message: message}
@@ -721,11 +902,24 @@ func downloadFileWithHash(url, filePath string, onProgress func(downloaded, tota
 }
 
 func downloadFileWithHashWithTimeout(url, filePath string, onProgress func(downloaded, total int64), timeout time.Duration) (string, error) {
+	return downloadFileWithHashControlled(url, filePath, onProgress, timeout, nil)
+}
+
+func downloadFileWithHashControlled(url, filePath string, onProgress func(downloaded, total int64), timeout time.Duration, ctrl *updateDownloadControl) (string, error) {
 	if timeout <= 0 {
 		timeout = 10 * time.Minute
 	}
-	client := newHTTPClientWithGlobalProxy(timeout)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	// 可暂停下载禁用 Client.Timeout，避免暂停期间被整体超时打断；取消仍走 request context。
+	clientTimeout := timeout
+	if ctrl != nil {
+		clientTimeout = 0
+	}
+	client := newHTTPClientWithGlobalProxy(clientTimeout)
+	reqCtx := context.Background()
+	if ctrl != nil {
+		reqCtx = ctrl.ctx
+	}
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}
@@ -736,6 +930,9 @@ func downloadFileWithHashWithTimeout(url, filePath string, onProgress func(downl
 
 	resp, err := client.Do(req)
 	if err != nil {
+		if errors.Is(err, context.Canceled) || (ctrl != nil && errors.Is(ctrl.ctx.Err(), context.Canceled)) {
+			return "", context.Canceled
+		}
 		return "", err
 	}
 	defer resp.Body.Close()
@@ -777,8 +974,15 @@ func downloadFileWithHashWithTimeout(url, filePath string, onProgress func(downl
 	if onProgress != nil {
 		onProgress(0, total)
 	}
-	if _, err := io.Copy(io.MultiWriter(writers...), resp.Body); err != nil {
+	var body io.Reader = resp.Body
+	if ctrl != nil {
+		body = &controlledReader{r: resp.Body, ctrl: ctrl}
+	}
+	if _, err := io.Copy(io.MultiWriter(writers...), body); err != nil {
 		out.Close()
+		if errors.Is(err, context.Canceled) || (ctrl != nil && errors.Is(ctrl.ctx.Err(), context.Canceled)) {
+			return "", context.Canceled
+		}
 		return "", err
 	}
 	if onProgress != nil {
@@ -990,6 +1194,14 @@ func resolveUpdateInstallTarget() string {
 }
 
 func (a *App) emitUpdateDownloadProgress(status string, downloaded, total int64, message string) {
+	a.updateMu.Lock()
+	if status == "start" || status == "downloading" || status == "paused" || status == "done" || status == "cancelled" {
+		a.updateState.lastDownloaded = downloaded
+		if total > 0 {
+			a.updateState.lastTotal = total
+		}
+	}
+	a.updateMu.Unlock()
 	if a.ctx == nil {
 		return
 	}

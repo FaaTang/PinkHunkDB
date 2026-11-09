@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isSidebarTablesObjectGroup,
   isSidebarTreeDoubleClickGesture,
   resolveSidebarTreeRangeKeys,
   resolveSidebarTreeSelectState,
@@ -107,7 +108,24 @@ describe('sidebar tree select state', () => {
     expect(shouldToggleSidebarTreeNodeOnDoubleClick({ type: 'connection', isLeaf: false })).toBe(true);
     expect(shouldToggleSidebarTreeNodeOnDoubleClick({ type: 'database', isLeaf: false })).toBe(true);
     expect(shouldToggleSidebarTreeNodeOnDoubleClick({ type: 'object-group', isLeaf: false })).toBe(true);
+    expect(shouldToggleSidebarTreeNodeOnDoubleClick({
+      type: 'object-group',
+      isLeaf: false,
+      dataRef: { groupKey: 'tables' },
+    })).toBe(true);
     expect(shouldToggleSidebarTreeNodeOnDoubleClick({ type: 'table', isLeaf: false })).toBe(false);
     expect(shouldToggleSidebarTreeNodeOnDoubleClick({ type: 'connection', isLeaf: true })).toBe(false);
+  });
+
+  it('recognizes tables object-group nodes', () => {
+    expect(isSidebarTablesObjectGroup({
+      type: 'object-group',
+      dataRef: { groupKey: 'tables' },
+    })).toBe(true);
+    expect(isSidebarTablesObjectGroup({
+      type: 'object-group',
+      dataRef: { groupKey: 'views' },
+    })).toBe(false);
+    expect(isSidebarTablesObjectGroup({ type: 'table' })).toBe(false);
   });
 });

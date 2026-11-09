@@ -10,6 +10,7 @@ import {
   FileAddOutlined,
   FolderOpenOutlined,
   FolderOutlined,
+  AppstoreOutlined,
   SaveOutlined,
   SendOutlined,
   LinkOutlined,
@@ -263,6 +264,7 @@ export const V2TableContextMenuView: React.FC<{
 };
 
 export type V2TableGroupContextMenuActionKey =
+  | 'open-overview'
   | 'new-table'
   | 'sort-by-name'
   | 'sort-by-frequency';
@@ -307,6 +309,7 @@ export const V2TableGroupContextMenuView: React.FC<{
 
       <div className="gn-v2-context-menu-body">
         {renderItems([
+          { action: 'open-overview', icon: <AppstoreOutlined />, title: t('sidebar.v2_table_group_menu.open_overview') },
           { action: 'new-table', icon: <TableOutlined />, title: t('sidebar.menu.create_table'), kbd: primaryShortcut('N', shortcutPlatform), featured: true },
         ])}
 

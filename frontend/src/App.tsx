@@ -1535,6 +1535,7 @@ function App() {
       aboutUpdateDownloadPath,
       aboutUpdateStatus,
       canShowProgressEntry,
+      cancelUpdateDownload,
       checkForUpdates,
       downloadUpdate,
       formatBytes,
@@ -1546,6 +1547,8 @@ function App() {
       lastUpdateInfo,
       markUpdateProgressDismissed,
       openDownloadedUpdatePackage,
+      pauseUpdateDownload,
+      resumeUpdateDownload,
       skipCurrentUpdateVersion,
       disableAutoUpdatePrompt,
       setIsAboutOpen,
@@ -5180,7 +5183,7 @@ function App() {
               maskClosable
               keyboard
               onCancel={hideUpdateDownloadProgress}
-              footer={updateDownloadProgress.status === 'start' || updateDownloadProgress.status === 'downloading' ? [
+              footer={updateDownloadProgress.status === 'start' || updateDownloadProgress.status === 'downloading' || updateDownloadProgress.status === 'paused' ? [
                   <Button
                       key="background"
                       onClick={() => {
@@ -5189,13 +5192,42 @@ function App() {
                       }}
                   >
                       {t('app.about.action.hide_to_background')}
-                  </Button>
+                  </Button>,
+                  <Button
+                      key="cancel"
+                      danger
+                      onClick={() => {
+                          void cancelUpdateDownload();
+                      }}
+                  >
+                      {t('app.about.action.cancel_download')}
+                  </Button>,
+                  updateDownloadProgress.status === 'paused' ? (
+                      <Button
+                          key="resume"
+                          type="primary"
+                          onClick={() => {
+                              void resumeUpdateDownload();
+                          }}
+                      >
+                          {t('app.about.action.resume_download')}
+                      </Button>
+                  ) : (
+                      <Button
+                          key="pause"
+                          onClick={() => {
+                              void pauseUpdateDownload();
+                          }}
+                      >
+                          {t('app.about.action.pause_download')}
+                      </Button>
+                  ),
               ] : (updateDownloadProgress.status === 'done' ? [
                   <Button key="close" onClick={hideUpdateDownloadProgress}>{t('common.close')}</Button>,
                   <Button key="install" type="primary" onClick={handleInstallFromProgress}>
                       {t('app.about.action.install_update')}
                   </Button>
-              ] : (updateDownloadProgress.status === 'error' ? [
+              ] : (updateDownloadProgress.status === 'error' || updateDownloadProgress.status === 'cancelled' ? [
                   <Button key="close" onClick={hideUpdateDownloadProgress}>{t('common.close')}</Button>,
                   <Button
                       key="retry"
@@ -5214,12 +5246,24 @@ function App() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <Progress
                       percent={Math.round(updateDownloadProgress.percent)}
-                      status={updateDownloadProgress.status === 'error' ? 'exception' : (updateDownloadProgress.status === 'done' ? 'success' : 'active')}
+                      status={updateDownloadProgress.status === 'error'
+                          ? 'exception'
+                          : (updateDownloadProgress.status === 'done'
+                              ? 'success'
+                              : (updateDownloadProgress.status === 'paused' || updateDownloadProgress.status === 'cancelled'
+                                  ? 'normal'
+                                  : 'active'))}
                   />
                   <div style={{ fontSize: 12, color: darkMode ? 'rgba(255,255,255,0.5)' : 'rgba(16,24,40,0.55)' }}>
                       {`${formatBytes(updateDownloadProgress.downloaded)} / ${formatBytes(updateDownloadProgress.total)}`}
+                      {updateDownloadProgress.status === 'paused'
+                          ? ` · ${t('app.about.download_progress.paused')}`
+                          : null}
+                      {updateDownloadProgress.status === 'cancelled'
+                          ? ` · ${t('app.about.download_progress.cancelled')}`
+                          : null}
                   </div>
-                  {updateDownloadProgress.message ? (
+                  {updateDownloadProgress.message && updateDownloadProgress.status === 'error' ? (
                       <div style={{ fontSize: 12, color: '#ff4d4f' }}>{updateDownloadProgress.message}</div>
                   ) : null}
               </div>

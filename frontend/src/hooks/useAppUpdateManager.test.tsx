@@ -25,6 +25,9 @@ type BackendAppMock = {
   CheckForUpdates: ReturnType<typeof vi.fn>;
   CheckForUpdatesSilently: ReturnType<typeof vi.fn>;
   DownloadUpdate: ReturnType<typeof vi.fn>;
+  PauseUpdateDownload: ReturnType<typeof vi.fn>;
+  ResumeUpdateDownload: ReturnType<typeof vi.fn>;
+  CancelUpdateDownload: ReturnType<typeof vi.fn>;
   InstallUpdateAndRestart: ReturnType<typeof vi.fn>;
   OpenDownloadedUpdateDirectory: ReturnType<typeof vi.fn>;
   OpenDownloadedUpdatePackage: ReturnType<typeof vi.fn>;
@@ -35,6 +38,9 @@ const createBackendAppMock = (): BackendAppMock => ({
   CheckForUpdates: vi.fn(),
   CheckForUpdatesSilently: vi.fn(),
   DownloadUpdate: vi.fn(),
+  PauseUpdateDownload: vi.fn(),
+  ResumeUpdateDownload: vi.fn(),
+  CancelUpdateDownload: vi.fn(),
   InstallUpdateAndRestart: vi.fn(),
   OpenDownloadedUpdateDirectory: vi.fn(),
   OpenDownloadedUpdatePackage: vi.fn(),
@@ -340,5 +346,65 @@ describe('useAppUpdateManager', () => {
 
     expect(backendApp.DownloadUpdate).toHaveBeenCalledTimes(2);
     expect(hook?.lastUpdateInfo?.downloaded).toBe(true);
+  });
+
+  it('supports pause resume and cancel while an update download is in progress', async () => {
+    backendApp.CheckForUpdates.mockResolvedValue({
+      success: true,
+      data: {
+        hasUpdate: true,
+        currentVersion: '0.8.1',
+        latestVersion: '0.8.2',
+        downloaded: false,
+        assetSize: 2048,
+      },
+    });
+    let resolveDownload: ((value: any) => void) | null = null;
+    backendApp.DownloadUpdate.mockImplementation(() => new Promise((resolve) => {
+      resolveDownload = resolve;
+    }));
+    backendApp.PauseUpdateDownload.mockResolvedValue({ success: true });
+    backendApp.ResumeUpdateDownload.mockResolvedValue({ success: true });
+    backendApp.CancelUpdateDownload.mockResolvedValue({ success: true });
+
+    renderHook(false);
+
+    await act(async () => {
+      await hook?.checkForUpdates(false);
+    });
+
+    let downloadPromise: Promise<void> | undefined;
+    await act(async () => {
+      downloadPromise = hook?.downloadUpdate(hook.lastUpdateInfo!, false);
+    });
+
+    expect(hook?.isBackgroundProgressForLatestUpdate).toBe(true);
+
+    await act(async () => {
+      await hook?.pauseUpdateDownload();
+    });
+    expect(backendApp.PauseUpdateDownload).toHaveBeenCalledTimes(1);
+    expect(hook?.updateDownloadProgress.status).toBe('paused');
+    expect(hook?.isBackgroundProgressForLatestUpdate).toBe(true);
+
+    await act(async () => {
+      await hook?.resumeUpdateDownload();
+    });
+    expect(backendApp.ResumeUpdateDownload).toHaveBeenCalledTimes(1);
+    expect(hook?.updateDownloadProgress.status).toBe('downloading');
+
+    await act(async () => {
+      await hook?.cancelUpdateDownload();
+    });
+    expect(backendApp.CancelUpdateDownload).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveDownload?.({ success: false, message: 'cancelled', data: { cancelled: true } });
+      await downloadPromise;
+    });
+
+    expect(hook?.updateDownloadProgress.status).toBe('cancelled');
+    expect(hook?.isBackgroundProgressForLatestUpdate).toBe(false);
+    expect(messageApi.info).toHaveBeenCalled();
   });
 });

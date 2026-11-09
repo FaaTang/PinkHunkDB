@@ -14,6 +14,8 @@ export function CancelQuery(arg1:string):Promise<connection.QueryResult>;
 
 export function CancelSQLFileExecution(arg1:string):Promise<connection.QueryResult>;
 
+export function CancelUpdateDownload():Promise<connection.QueryResult>;
+
 export function CheckDriverNetworkStatus():Promise<connection.QueryResult>;
 
 export function CheckForUpdates():Promise<connection.QueryResult>;
@@ -240,6 +242,8 @@ export function OpenDriverDownloadDirectory(arg1:string):Promise<connection.Quer
 
 export function OpenSQLFile():Promise<connection.QueryResult>;
 
+export function PauseUpdateDownload():Promise<connection.QueryResult>;
+
 export function PreviewChanges(arg1:connection.ConnectionConfig,arg2:string,arg3:string,arg4:connection.ChangeSet):Promise<connection.QueryResult>;
 
 export function PreviewImportFile(arg1:string):Promise<connection.QueryResult>;
@@ -321,6 +325,8 @@ export function ResolveDriverPackageDownloadURL(arg1:string,arg2:string):Promise
 export function ResolveDriverRepositoryURL(arg1:string):Promise<connection.QueryResult>;
 
 export function RestartSecurityUpdate(arg1:app.RestartSecurityUpdateRequest):Promise<app.SecurityUpdateStatus>;
+
+export function ResumeUpdateDownload():Promise<connection.QueryResult>;
 
 export function RetrySecurityUpdateCurrentRound(arg1:app.RetrySecurityUpdateRequest):Promise<app.SecurityUpdateStatus>;
 

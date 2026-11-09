@@ -68,6 +68,7 @@ type UseSidebarV2ActionHandlersArgs = {
   extractObjectName: (fullName: string) => string;
   openDesign: (node: any, initialTab: string, readOnly?: boolean) => void;
   openNewTableDesign: (node: any) => void;
+  openTablesObjectGroupOverview: (node: any) => void;
   onDoubleClick: (event: any, node: any) => void;
   openMessagePublishModal: (node: any) => void;
   openTableDdlInDesigner: (node: any) => void;
@@ -135,6 +136,7 @@ export const useSidebarV2ActionHandlers = ({
   extractObjectName,
   openDesign,
   openNewTableDesign,
+  openTablesObjectGroupOverview,
   onDoubleClick,
   openMessagePublishModal,
   openTableDdlInDesigner,
@@ -263,6 +265,9 @@ export const useSidebarV2ActionHandlers = ({
 
   const handleV2TableGroupContextMenuAction = (node: any, action: V2TableGroupContextMenuActionKey) => {
     switch (action) {
+      case 'open-overview':
+        openTablesObjectGroupOverview(node);
+        return;
       case 'new-table':
         openNewTableDesign(node);
         return;

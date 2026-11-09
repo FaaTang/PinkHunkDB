@@ -18,6 +18,10 @@ export function CancelSQLFileExecution(arg1) {
   return window['go']['app']['App']['CancelSQLFileExecution'](arg1);
 }
 
+export function CancelUpdateDownload() {
+  return window['go']['app']['App']['CancelUpdateDownload']();
+}
+
 export function CheckDriverNetworkStatus() {
   return window['go']['app']['App']['CheckDriverNetworkStatus']();
 }
@@ -470,6 +474,10 @@ export function OpenSQLFile() {
   return window['go']['app']['App']['OpenSQLFile']();
 }
 
+export function PauseUpdateDownload() {
+  return window['go']['app']['App']['PauseUpdateDownload']();
+}
+
 export function PreviewChanges(arg1, arg2, arg3, arg4) {
   return window['go']['app']['App']['PreviewChanges'](arg1, arg2, arg3, arg4);
 }
@@ -632,6 +640,10 @@ export function ResolveDriverRepositoryURL(arg1) {
 
 export function RestartSecurityUpdate(arg1) {
   return window['go']['app']['App']['RestartSecurityUpdate'](arg1);
+}
+
+export function ResumeUpdateDownload() {
+  return window['go']['app']['App']['ResumeUpdateDownload']();
 }
 
 export function RetrySecurityUpdateCurrentRound(arg1) {

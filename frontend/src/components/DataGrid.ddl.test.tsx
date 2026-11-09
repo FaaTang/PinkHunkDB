@@ -1220,12 +1220,13 @@ storeState.queryOptions.showColumnComment = true;
     expect(content).toContain(t('sidebar.v2_table_group_menu.title'));
     expect(content).toContain(t('sidebar.v2_table_group_menu.current_database'));
     expect(content).toContain(t('sidebar.v2_table_group_menu.sort_frequency'));
+    expect(content).toContain(t('sidebar.v2_table_group_menu.open_overview'));
     expect(content).toContain(t('sidebar.menu.create_table'));
     expect(content).toContain(t('data_grid.context_menu.sort_section'));
     expect(content).toContain(t('sidebar.menu.sort_by_name'));
     expect(content).toContain(t('sidebar.menu.sort_by_frequency'));
     expect(content).toContain(t('data_grid.context_menu.current_marker'));
-    ['表 · tables', '使用频率', '当前数据库', '张表', '当前按', '新建表', '排序', '按名称排序', '按使用频率排序', '当前'].forEach((rawSnippet) => {
+    ['表 · tables', '使用频率', '当前数据库', '张表', '当前按', '打开表概览', '新建表', '排序', '按名称排序', '按使用频率排序', '当前'].forEach((rawSnippet) => {
       expect(content).not.toContain(rawSnippet);
     });
     renderer.unmount();
@@ -1329,6 +1330,7 @@ storeState.queryOptions.showColumnComment = true;
     [
       "t('sidebar.v2_table_group_menu.title')",
       "t('sidebar.v2_table_group_menu.current_database')",
+      "t('sidebar.v2_table_group_menu.open_overview')",
       "t('sidebar.v2_table_group_menu.sort_name')",
       "t('sidebar.v2_table_group_menu.sort_frequency')",
       "t('sidebar.v2_table_group_menu.meta'",
@@ -1346,6 +1348,7 @@ storeState.queryOptions.showColumnComment = true;
       '使用频率',
       '名称',
       '当前数据库',
+      '打开表概览',
       '张表',
       '当前按',
       '新建表',
