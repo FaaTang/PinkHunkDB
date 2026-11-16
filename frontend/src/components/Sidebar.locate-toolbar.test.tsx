@@ -1133,7 +1133,7 @@ describe('Sidebar locate toolbar', () => {
     expect(css).toMatch(/\.gn-v2-rail-tool \{[^}]*height: calc\(32px \* var\(--gn-ui-scale, 1\)\);/s);
     expect(css).toMatch(/\.gn-v2-rail-tool \{[^}]*width: calc\(24px \* var\(--gn-ui-scale, 1\)\);/s);
     expect(css).toMatch(/\.gn-v2-active-connection-header \{[^}]*justify-content: flex-end;/s);
-    expect(css).toMatch(/\.gn-v2-selection-path\.is-tree \{[^}]*flex-direction: column;/s);
+    expect(css).toMatch(/\.gn-v2-explorer-dock \.gn-v2-selection-path\.is-tree \{[^}]*flex-direction: row;/s);
     expect(css).toMatch(/\.gn-v2-selection-crumb\.is-connection \{[^}]*color: var\(--gn-fg-1\);/s);
     expect(css).toMatch(/\.gn-v2-selection-locate \{[^}]*margin-left: auto;/s);
     expect(css).not.toContain('.gn-v2-active-connection-trigger:hover');
@@ -1205,7 +1205,9 @@ describe('Sidebar locate toolbar', () => {
     expect(css).toMatch(/\.gn-v2-tree-title\.is-mono \.gn-v2-tree-label \{[^}]*flex: 0 0 auto;[^}]*overflow: visible;[^}]*text-overflow: clip;/s);
     expect(css).toMatch(/\.gn-v2-tree-folder-icon \{[^}]*width: 14px;[^}]*height: 14px;[^}]*flex: 0 0 14px;/s);
     expect(source).toContain('itemHeight={V2_TREE_ITEM_HEIGHT}');
-    expect(utilsSource).toContain('export const V2_TREE_ITEM_HEIGHT = 20;');
+    expect(utilsSource).toContain('export const V2_TREE_ITEM_HEIGHT = 18;');
+    expect(source).toContain('gn-v2-explorer-dock');
+    expect(source).toContain('gn-v2-object-explorer is-tree-first');
     expect(css).not.toContain('.gn-v2-tree-connection-meta');
   });
 

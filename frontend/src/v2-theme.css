@@ -209,9 +209,11 @@ body[data-ui-version="v2"] .ant-tree .ant-tree-treenode {
 }
 
 body[data-ui-version="v2"] .ant-tree .ant-tree-node-content-wrapper {
-  border-radius: 4px !important;
-  padding: 0 4px !important;
-  min-height: 20px !important;
+  border-radius: 3px !important;
+  padding: 0 3px !important;
+  min-height: 18px !important;
+  height: 18px !important;
+  line-height: 18px !important;
   transition: background 0.06s !important;
 }
 
@@ -2146,6 +2148,83 @@ body[data-ui-version="v2"] .gn-v2-object-explorer {
   overflow: hidden;
 }
 
+body[data-ui-version="v2"] .gn-v2-object-explorer.is-tree-first > .gn-v2-explorer-tree-shell {
+  order: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  border-bottom: 0.5px solid var(--gn-br-1);
+}
+
+body[data-ui-version="v2"] .gn-v2-explorer-dock {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px 4px;
+  border-top: 0;
+  background: var(--gn-bg-panel-2);
+}
+
+body[data-ui-version="v2"] .gn-v2-explorer-dock-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+body[data-ui-version="v2"] .gn-v2-explorer-dock-tools .gn-v2-explorer-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 !important;
+  border-bottom: none !important;
+}
+
+body[data-ui-version="v2"] .gn-v2-explorer-dock-tools .gn-v2-active-connection-header {
+  flex: 0 0 auto;
+  padding: 0;
+  min-height: 0;
+  border-bottom: 0;
+  position: static;
+  background: transparent;
+}
+
+body[data-ui-version="v2"] .gn-v2-explorer-dock-tools .gn-v2-active-connection-actions .ant-btn {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  padding: 0 !important;
+}
+
+body[data-ui-version="v2"] .gn-v2-explorer-dock .gn-v2-explorer-filter-tabs {
+  padding: 0;
+}
+
+body[data-ui-version="v2"] .gn-v2-explorer-dock .gn-v2-selection-path-row {
+  padding: 0;
+  border-bottom: 0;
+  background: transparent;
+}
+
+body[data-ui-version="v2"] .gn-v2-explorer-dock .gn-v2-selection-path.is-tree {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+body[data-ui-version="v2"] .gn-v2-explorer-dock .gn-v2-selection-path-line {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding-left: 0;
+}
+
+body[data-ui-version="v2"] .gn-v2-explorer-dock .gn-v2-selection-line-guide {
+  display: none;
+}
+
 body[data-ui-version="v2"] .gn-v2-active-connection-header {
   padding: 2px 8px 2px 10px;
   min-height: 28px;
@@ -2369,7 +2448,7 @@ body[data-ui-version="v2"] .gn-v2-active-connection-actions {
 }
 
 body[data-ui-version="v2"] .gn-v2-explorer-search {
-  padding: 6px 8px 4px !important;
+  padding: 0 !important;
   border-bottom: none !important;
 }
 
@@ -2836,32 +2915,39 @@ body[data-ui-version="v2"] .gn-v2-explorer-tree-shell .ant-tree-list-holder-inne
 }
 
 body[data-ui-version="v2"] .gn-v2-explorer-tree-shell .ant-tree-treenode {
-  min-height: 20px !important;
-  padding: 0 4px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  max-height: 18px !important;
+  padding: 0 2px !important;
   align-items: center;
+  box-sizing: border-box !important;
 }
 
 body[data-ui-version="v2"] .gn-v2-explorer-tree-shell .ant-tree-switcher {
-  width: 14px !important;
-  min-width: 14px !important;
-  align-self: stretch;
-  line-height: 20px !important;
-  font-size: 10px !important;
+  width: 12px !important;
+  min-width: 12px !important;
+  height: 18px !important;
+  align-self: center;
+  line-height: 18px !important;
+  font-size: 9px !important;
   color: var(--gn-fg-4);
 }
 
 body[data-ui-version="v2"] .gn-v2-explorer-tree-shell .ant-tree-indent-unit {
-  width: 8px !important;
+  width: 7px !important;
 }
 
 body[data-ui-version="v2"] .gn-v2-explorer-tree-shell .ant-tree-node-content-wrapper {
   min-width: 0;
-  min-height: 20px !important;
-  padding: 0 4px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  max-height: 18px !important;
+  padding: 0 3px !important;
   display: flex !important;
   align-items: center;
-  border-radius: 4px !important;
+  border-radius: 3px !important;
   color: var(--gn-fg-3) !important;
+  line-height: 18px !important;
 }
 
 body[data-ui-version="v2"] .gn-v2-explorer-tree-shell .ant-tree-node-content-wrapper:hover {
@@ -2875,14 +2961,16 @@ body[data-ui-version="v2"] .gn-v2-explorer-tree-shell .ant-tree-node-content-wra
 }
 
 body[data-ui-version="v2"] .gn-v2-explorer-tree-shell .ant-tree-iconEle {
-  width: 13px !important;
-  min-width: 13px !important;
-  margin-right: 3px !important;
+  width: 12px !important;
+  min-width: 12px !important;
+  height: 18px !important;
+  margin-right: 2px !important;
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
   color: var(--gn-fg-4);
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 18px !important;
 }
 
 body[data-ui-version="v2"] .gn-v2-explorer-tree-shell .ant-tree-iconEle .anticon-table,
@@ -2937,12 +3025,13 @@ body[data-ui-version="v2"] .gn-v2-tree-title {
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   color: var(--gn-fg-2);
   font-family: var(--gn-font-sans);
   font-size: var(--gn-sidebar-tree-font-size, var(--gn-font-size-sm, 12px));
   font-weight: 400 !important;
-  line-height: 1.15;
+  line-height: 18px;
+  height: 18px;
 }
 
 body[data-ui-version="v2"] .gn-v2-tree-title.is-mono {

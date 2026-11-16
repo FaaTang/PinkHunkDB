@@ -3543,196 +3543,7 @@ const Sidebar: React.FC<{
     <div className={'gn-v2-sidebar-redesign'} style={{ display: 'flex', height: '100%', minHeight: 0 }}>
         {exportProgressModal}
         {<SidebarConnectionRail {...v2ConnectionRailProps} />}
-        <div className={'gn-v2-object-explorer'} style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0, flex: 1 }}>
-        <div className={'gn-v2-explorer-search'} style={{ padding: '8px 14px', borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}` }}>
-            {!v2UseLegacySidebarFilter ? (
-                <div className="gn-v2-explorer-command-row" data-v2-sidebar-search-mode="command">
-                    <button
-                        type="button"
-                        className="gn-v2-explorer-command-trigger"
-                        onClick={() => {
-                            openV2CommandSearch();
-                            onFocusCommandSearch?.();
-                        }}
-                        aria-label={v2CommandSearchLabel}
-                    >
-                        <SearchOutlined />
-                        <span>{v2PersistedSidebarFilter || v2CommandSearchPlaceholder}</span>
-                        {focusSidebarSearchShortcutTokens.length > 0 ? (
-                            <span className="gn-v2-search-shortcut" aria-hidden="true">
-                                {focusSidebarSearchShortcutTokens.map((token, index) => (
-                                    <kbd key={`${token}-${index}`}>{token}</kbd>
-                                ))}
-                            </span>
-                        ) : null}
-                    </button>
-                    <Tooltip title={v2PersistedSidebarFilter ? t('sidebar.command_search.reset_filter') : t('sidebar.command_search.no_synced_filter')}>
-                        <button
-                            type="button"
-                            className="gn-v2-explorer-filter-action"
-                            aria-label={t('sidebar.command_search.reset_filter')}
-                            disabled={!v2PersistedSidebarFilter}
-                            onClick={resetV2SidebarFilter}
-                        >
-                            <ReloadOutlined />
-                        </button>
-                    </Tooltip>
-                </div>
-            ) : (
-                <div className="gn-v2-explorer-legacy-filter-row" data-v2-sidebar-search-mode="filter">
-                    <Input
-                        {...noAutoCapInputProps}
-                        ref={searchInputRef}
-                        value={searchValue}
-                        placeholder={t('sidebar.search.placeholder')}
-                        onChange={onSearch}
-                        size="small"
-                        prefix={<SearchOutlined />}
-                    />
-                    <Tooltip title={searchValue ? t('sidebar.command_search.reset_filter') : t('sidebar.command_search.no_filter_content')}>
-                        <button
-                            type="button"
-                            className="gn-v2-explorer-filter-action"
-                            aria-label={t('sidebar.command_search.reset_filter')}
-                            disabled={!searchValue}
-                            onClick={resetV2SidebarFilter}
-                        >
-                            <ReloadOutlined />
-                        </button>
-                    </Tooltip>
-                </div>
-            )}
-        </div>
-        {(
-            <div className="gn-v2-active-connection-header" data-object-count={activeConnectionObjectCount}>
-                <div className="gn-v2-active-connection-actions">
-                    <Tooltip title={v2ExpandAllLabel}>
-                        <Button
-                            size="small"
-                            type="text"
-                            icon={<NodeExpandOutlined />}
-                            aria-label={v2ExpandAllLabel}
-                            data-sidebar-expand-all-action="true"
-                            disabled={v2VisibleTreeData.length === 0}
-                            onClick={expandAllSidebarTree}
-                        />
-                    </Tooltip>
-                    <Tooltip title={v2CollapseAllLabel}>
-                        <Button
-                            size="small"
-                            type="text"
-                            icon={<NodeCollapseOutlined />}
-                            aria-label={v2CollapseAllLabel}
-                            data-sidebar-collapse-all-action="true"
-                            disabled={expandedKeys.length === 0}
-                            onClick={collapseAllSidebarTree}
-                        />
-                    </Tooltip>
-                    {onCreateConnection && (
-                        <Tooltip title={t('connection.new')}>
-                            <Button
-                                size="small"
-                                type="text"
-                                icon={<PlusOutlined />}
-                                aria-label={t('connection.new')}
-                                data-gonavi-create-connection-action="true"
-                                onClick={onCreateConnection}
-                            />
-                        </Tooltip>
-                    )}
-                    <Tooltip title={v2ConnectionActionsLabel}>
-                        <Button
-                            size="small"
-                            type="text"
-                            icon={<MoreOutlined />}
-                            aria-label={v2ConnectionActionsLabel}
-                            disabled={!activeConnection}
-                            onClick={(event) => {
-                                if (activeConnection) {
-                                    openV2ConnectionContextMenu(event, activeConnection);
-                                }
-                            }}
-                        />
-                    </Tooltip>
-                </div>
-            </div>
-        )}
-
-        <div className="gn-v2-explorer-filter-tabs" aria-label={t('sidebar.command_search.object_kind.filter_aria')}>
-                {V2_EXPLORER_FILTER_OPTIONS.map((item) => (
-                    <button
-                        key={item.key}
-                        type="button"
-                        className={v2ExplorerFilter === item.key ? 'is-active' : undefined}
-                        aria-pressed={v2ExplorerFilter === item.key}
-                        onClick={() => setV2ExplorerFilter(item.key)}
-                    >
-                        {t(item.labelKey)}
-                    </button>
-                ))}
-            </div>
-        <div className="gn-v2-selection-path-row">
-            <div
-                className="gn-v2-selection-path is-tree"
-                data-sidebar-scroll-context={hasScrollOrSelectionPath ? 'true' : 'false'}
-                title={pathTitle || activeConnectionDisplayName}
-            >
-                {(hasScrollOrSelectionPath
-                    ? pathRows
-                    : (activeConnection?.id
-                        ? [{
-                            key: 'connection',
-                            label: activeConnectionDisplayName,
-                            className: 'is-connection',
-                            locateKind: 'connection' as const,
-                            locateKey: activeConnection.id,
-                        }]
-                        : [{
-                            key: 'connection',
-                            label: activeConnectionDisplayName,
-                            className: 'is-connection',
-                            locateKind: 'connection' as const,
-                        }])
-                ).map((row, index, rows) => (
-                    <div
-                        key={row.key}
-                        className={[
-                            'gn-v2-selection-path-line',
-                            `depth-${index + 1}`,
-                            row.className,
-                            index === rows.length - 1 ? 'is-leaf' : '',
-                        ].filter(Boolean).join(' ')}
-                    >
-                        <span className="gn-v2-selection-line-guide" aria-hidden="true">
-                            <span className="gn-v2-selection-line-rail" />
-                            <span className="gn-v2-selection-line-node" />
-                        </span>
-                        <span className={`gn-v2-selection-crumb ${row.className}`}>{row.label}</span>
-                        {(row.locateDetail || row.locateKey) ? (
-                            <Tooltip title={v2LocatePathLevelLabel}>
-                                <button
-                                    type="button"
-                                    className="gn-v2-selection-locate"
-                                    aria-label={v2LocatePathLevelLabel}
-                                    data-sidebar-path-locate={row.key}
-                                    onClick={(event) => {
-                                        event.preventDefault();
-                                        event.stopPropagation();
-                                        locateSelectionPathRow(row);
-                                    }}
-                                >
-                                    <AimOutlined />
-                                </button>
-                            </Tooltip>
-                        ) : null}
-                    </div>
-                ))}
-            </div>
-        </div>
-
-        {/* Toolbar */}
-        
-
+        <div className={'gn-v2-object-explorer is-tree-first'} style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0, flex: 1 }}>
         <div
             ref={treeContainerRef}
             className={`sidebar-tree-scroll-shell gn-v2-explorer-tree-shell`}
@@ -3793,6 +3604,194 @@ const Sidebar: React.FC<{
                 />
             </div>
         </div>
+
+        <div className="gn-v2-explorer-dock" aria-label={t('sidebar.command_search.object_kind.filter_aria')}>
+            <div className="gn-v2-explorer-dock-tools">
+                <div className="gn-v2-explorer-search">
+                    {!v2UseLegacySidebarFilter ? (
+                        <div className="gn-v2-explorer-command-row" data-v2-sidebar-search-mode="command">
+                            <button
+                                type="button"
+                                className="gn-v2-explorer-command-trigger"
+                                onClick={() => {
+                                    openV2CommandSearch();
+                                    onFocusCommandSearch?.();
+                                }}
+                                aria-label={v2CommandSearchLabel}
+                            >
+                                <SearchOutlined />
+                                <span>{v2PersistedSidebarFilter || v2CommandSearchPlaceholder}</span>
+                                {focusSidebarSearchShortcutTokens.length > 0 ? (
+                                    <span className="gn-v2-search-shortcut" aria-hidden="true">
+                                        {focusSidebarSearchShortcutTokens.map((token, index) => (
+                                            <kbd key={`${token}-${index}`}>{token}</kbd>
+                                        ))}
+                                    </span>
+                                ) : null}
+                            </button>
+                            <Tooltip title={v2PersistedSidebarFilter ? t('sidebar.command_search.reset_filter') : t('sidebar.command_search.no_synced_filter')}>
+                                <button
+                                    type="button"
+                                    className="gn-v2-explorer-filter-action"
+                                    aria-label={t('sidebar.command_search.reset_filter')}
+                                    disabled={!v2PersistedSidebarFilter}
+                                    onClick={resetV2SidebarFilter}
+                                >
+                                    <ReloadOutlined />
+                                </button>
+                            </Tooltip>
+                        </div>
+                    ) : (
+                        <div className="gn-v2-explorer-legacy-filter-row" data-v2-sidebar-search-mode="filter">
+                            <Input
+                                {...noAutoCapInputProps}
+                                ref={searchInputRef}
+                                value={searchValue}
+                                placeholder={t('sidebar.search.placeholder')}
+                                onChange={onSearch}
+                                size="small"
+                                prefix={<SearchOutlined />}
+                            />
+                            <Tooltip title={searchValue ? t('sidebar.command_search.reset_filter') : t('sidebar.command_search.no_filter_content')}>
+                                <button
+                                    type="button"
+                                    className="gn-v2-explorer-filter-action"
+                                    aria-label={t('sidebar.command_search.reset_filter')}
+                                    disabled={!searchValue}
+                                    onClick={resetV2SidebarFilter}
+                                >
+                                    <ReloadOutlined />
+                                </button>
+                            </Tooltip>
+                        </div>
+                    )}
+                </div>
+                <div className="gn-v2-active-connection-header" data-object-count={activeConnectionObjectCount}>
+                    <div className="gn-v2-active-connection-actions">
+                        <Tooltip title={v2ExpandAllLabel}>
+                            <Button
+                                size="small"
+                                type="text"
+                                icon={<NodeExpandOutlined />}
+                                aria-label={v2ExpandAllLabel}
+                                data-sidebar-expand-all-action="true"
+                                disabled={v2VisibleTreeData.length === 0}
+                                onClick={expandAllSidebarTree}
+                            />
+                        </Tooltip>
+                        <Tooltip title={v2CollapseAllLabel}>
+                            <Button
+                                size="small"
+                                type="text"
+                                icon={<NodeCollapseOutlined />}
+                                aria-label={v2CollapseAllLabel}
+                                data-sidebar-collapse-all-action="true"
+                                disabled={expandedKeys.length === 0}
+                                onClick={collapseAllSidebarTree}
+                            />
+                        </Tooltip>
+                        {onCreateConnection && (
+                            <Tooltip title={t('connection.new')}>
+                                <Button
+                                    size="small"
+                                    type="text"
+                                    icon={<PlusOutlined />}
+                                    aria-label={t('connection.new')}
+                                    data-gonavi-create-connection-action="true"
+                                    onClick={onCreateConnection}
+                                />
+                            </Tooltip>
+                        )}
+                        <Tooltip title={v2ConnectionActionsLabel}>
+                            <Button
+                                size="small"
+                                type="text"
+                                icon={<MoreOutlined />}
+                                aria-label={v2ConnectionActionsLabel}
+                                disabled={!activeConnection}
+                                onClick={(event) => {
+                                    if (activeConnection) {
+                                        openV2ConnectionContextMenu(event, activeConnection);
+                                    }
+                                }}
+                            />
+                        </Tooltip>
+                    </div>
+                </div>
+            </div>
+            <div className="gn-v2-explorer-filter-tabs" aria-label={t('sidebar.command_search.object_kind.filter_aria')}>
+                {V2_EXPLORER_FILTER_OPTIONS.map((item) => (
+                    <button
+                        key={item.key}
+                        type="button"
+                        className={v2ExplorerFilter === item.key ? 'is-active' : undefined}
+                        aria-pressed={v2ExplorerFilter === item.key}
+                        onClick={() => setV2ExplorerFilter(item.key)}
+                    >
+                        {t(item.labelKey)}
+                    </button>
+                ))}
+            </div>
+            <div className="gn-v2-selection-path-row">
+                <div
+                    className="gn-v2-selection-path is-tree"
+                    data-sidebar-scroll-context={hasScrollOrSelectionPath ? 'true' : 'false'}
+                    title={pathTitle || activeConnectionDisplayName}
+                >
+                    {(hasScrollOrSelectionPath
+                        ? pathRows
+                        : (activeConnection?.id
+                            ? [{
+                                key: 'connection',
+                                label: activeConnectionDisplayName,
+                                className: 'is-connection',
+                                locateKind: 'connection' as const,
+                                locateKey: activeConnection.id,
+                            }]
+                            : [{
+                                key: 'connection',
+                                label: activeConnectionDisplayName,
+                                className: 'is-connection',
+                                locateKind: 'connection' as const,
+                            }])
+                    ).map((row, index, rows) => (
+                        <div
+                            key={row.key}
+                            className={[
+                                'gn-v2-selection-path-line',
+                                `depth-${index + 1}`,
+                                row.className,
+                                index === rows.length - 1 ? 'is-leaf' : '',
+                            ].filter(Boolean).join(' ')}
+                        >
+                            <span className="gn-v2-selection-line-guide" aria-hidden="true">
+                                <span className="gn-v2-selection-line-rail" />
+                                <span className="gn-v2-selection-line-node" />
+                            </span>
+                            <span className={`gn-v2-selection-crumb ${row.className}`}>{row.label}</span>
+                            {(row.locateDetail || row.locateKey) ? (
+                                <Tooltip title={v2LocatePathLevelLabel}>
+                                    <button
+                                        type="button"
+                                        className="gn-v2-selection-locate"
+                                        aria-label={v2LocatePathLevelLabel}
+                                        data-sidebar-path-locate={row.key}
+                                        onClick={(event) => {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+                                            locateSelectionPathRow(row);
+                                        }}
+                                    >
+                                        <AimOutlined />
+                                    </button>
+                                </Tooltip>
+                            ) : null}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+        {/* Toolbar */}
 
         <div className="gn-v2-sidebar-log-footer">
                 <button type="button" className="gn-v2-sidebar-log-button" onClick={onToggleLogPanel}>

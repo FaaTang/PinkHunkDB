@@ -3008,6 +3008,9 @@ function App() {
               siderBg: 'transparent',
               triggerBg: 'transparent'
           },
+          Tree: {
+              titleHeight: 18,
+          },
           Table: {
               headerBg: 'transparent',
               rowHoverBg: darkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.02)',
