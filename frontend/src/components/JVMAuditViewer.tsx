@@ -15,6 +15,7 @@ import { ReloadOutlined } from "@ant-design/icons";
 
 import { useI18n } from "../i18n/provider";
 import { useStore } from "../store";
+import { useResolvedDarkMode } from "../hooks/useResolvedDarkMode";
 import type { JVMAuditRecord, TabData } from "../types";
 import {
   formatJVMAuditResultLabel,
@@ -81,8 +82,7 @@ const JVMAuditViewer: React.FC<JVMAuditViewerProps> = ({ tab }) => {
   const connection = useStore((state) =>
     state.connections.find((item) => item.id === tab.connectionId),
   );
-  const theme = useStore((state) => state.theme);
-  const darkMode = theme === "dark";
+  const darkMode = useResolvedDarkMode();
   const [limit, setLimit] = useState(50);
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<JVMAuditRecord[]>([]);

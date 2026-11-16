@@ -19,6 +19,7 @@ import {
 } from "@ant-design/icons";
 
 import { useStore } from "../store";
+import { useResolvedDarkMode } from "../hooks/useResolvedDarkMode";
 import type {
   JVMActionDefinition,
   JVMApplyResult,
@@ -225,7 +226,7 @@ const JVMResourceBrowser: React.FC<JVMResourceBrowserProps> = ({ tab }) => {
   );
   const addTab = useStore((state) => state.addTab);
   const theme = useStore((state) => state.theme);
-  const darkMode = theme === "dark";
+  const darkMode = useResolvedDarkMode();
   const providerMode = (tab.providerMode ||
     connection?.config.jvm?.preferredMode ||
     "jmx") as "jmx" | "endpoint" | "agent";

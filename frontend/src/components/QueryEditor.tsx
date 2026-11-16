@@ -6,6 +6,7 @@ import { format } from 'sql-formatter';
 import { v4 as uuidv4 } from 'uuid';
 import { TabData, ColumnDefinition } from '../types';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { DBQuery, DBQueryWithCancel, DBQueryMulti, DBQueryMultiInTransaction, DBQueryMultiTransactional, DBGetTables, DBGetAllColumns, DBGetDatabases, DBGetColumns, CancelQuery, GenerateQueryID, WriteSQLFile, ExportSQLFile } from '../../wailsjs/go/app/App';
 import { GONAVI_ROW_KEY } from './DataGrid';
 import { findConnectionMutatingStatements } from '../utils/connectionReadOnly';
@@ -306,12 +307,11 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
   const connectionsRef = useRef(connections);
   const columnsCacheRef = useRef<Record<string, ColumnDefinition[]>>({});
   const saveQuery = useStore(state => state.saveQuery);
-  const theme = useStore(state => state.theme);
   const languagePreference = useStore((state) => state.languagePreference);
   void languagePreference;
   const appearance = useStore(state => state.appearance);
   const memorySettings = useStore(state => state.memorySettings);
-  const darkMode = theme === 'dark';
+  const darkMode = useResolvedDarkMode();
   const sqlFormatOptions = useStore(state => state.sqlFormatOptions);
   const setSqlFormatOptions = useStore(state => state.setSqlFormatOptions);
   const queryOptions = useStore(state => state.queryOptions);
@@ -1693,6 +1693,14 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
           document.removeEventListener('mouseup', handleMouseUp);
       };
   }, [cancelEditorResizeFrame, handleMouseMove, handleMouseUp]);
+
+  useEffect(() => {
+      const monaco = monacoRef.current;
+      if (!monaco?.editor?.setTheme) {
+          return;
+      }
+      monaco.editor.setTheme(darkMode ? 'transparent-dark' : 'transparent-light');
+  }, [darkMode]);
 
   // Setup Autocomplete and Editor
   const handleEditorDidMount: OnMount = (editor, monaco) => {

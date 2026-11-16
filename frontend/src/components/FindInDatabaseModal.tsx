@@ -5,6 +5,7 @@ import { SearchOutlined, StopOutlined, EyeOutlined, DatabaseOutlined } from '@an
 import { DBQuery, DBGetTables, DBGetAllColumns } from '../../wailsjs/go/app/App';
 import { quoteIdentPart, escapeLiteral } from '../utils/sql';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { buildOverlayWorkbenchTheme } from '../utils/overlayWorkbenchTheme';
 import { buildRpcConnectionConfig } from '../utils/connectionRpcConfig';
 import { isMacLikePlatform } from '../utils/appearance';
@@ -70,16 +71,15 @@ const FindInDatabaseModal: React.FC<FindInDatabaseModalProps> = ({ open, onClose
     const cancelledRef = useRef(false);
 
     const connections = useStore(state => state.connections);
-    const theme = useStore(state => state.theme);
+    const darkMode = useResolvedDarkMode();
     const disableLocalBackdropFilter = isMacLikePlatform();
 
     const conn = useMemo(() => connections.find(c => c.id === connectionId), [connections, connectionId]);
     const dbType = useMemo(() => (conn?.config?.type || 'mysql').toLowerCase(), [conn]);
 
     const wt = useMemo(() => {
-        const isDark = theme === 'dark';
-        return buildOverlayWorkbenchTheme(isDark, { disableBackdropFilter: disableLocalBackdropFilter });
-    }, [disableLocalBackdropFilter, theme]);
+        return buildOverlayWorkbenchTheme(darkMode, { disableBackdropFilter: disableLocalBackdropFilter });
+    }, [disableLocalBackdropFilter, darkMode]);
 
     const buildConfig = useCallback(() => {
         if (!conn) return null;
@@ -257,7 +257,7 @@ const FindInDatabaseModal: React.FC<FindInDatabaseModalProps> = ({ open, onClose
             align: 'center' as const,
             render: (count: number) => (
                 <Tag color={count >= MAX_MATCH_ROWS_PER_TABLE ? 'orange' : 'green'}>
-                    {count >= MAX_MATCH_ROWS_PER_TABLE ? `â‰¥${count}` : count}
+                    {count >= MAX_MATCH_ROWS_PER_TABLE ? `â‰?{count}` : count}
                 </Tag>
             ),
         },

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Editor, { loader, type BeforeMount, type EditorProps } from '@monaco-editor/react';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { sanitizeDataTableFontSize } from '../utils/dataGridDisplay';
 import { DEFAULT_MONO_FONT_FAMILY } from '../utils/fontFamilies';
 
@@ -88,10 +89,12 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 }) => {
   const typography = pinkHunkDBTypography ?? gonaviTypography ?? 'code';
   const [ready, setReady] = useState(isTestRuntime);
+  const darkMode = useResolvedDarkMode();
   const dataTableFontSize = useStore((state) => state.appearance.dataTableFontSize);
   const dataTableFontSizeFollowGlobal = useStore((state) => state.appearance.dataTableFontSizeFollowGlobal);
   const monoFontFamily = useStore((state) => state.appearance.customMonoFontFamily);
   const globalFontSize = useStore((state) => state.fontSize);
+  const resolvedTheme = darkMode ? 'transparent-dark' : 'transparent-light';
 
   useEffect(() => {
     let cancelled = false;
@@ -161,6 +164,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   return (
     <Editor
       {...props}
+      theme={resolvedTheme}
       options={resolvedOptions}
       loading={loading}
       beforeMount={handleBeforeMount}

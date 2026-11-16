@@ -4,6 +4,7 @@ import { Button, Spin, Alert } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { TabData } from '../types';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { DBQuery } from '../../wailsjs/go/app/App';
 import { buildRpcConnectionConfig } from '../utils/connectionRpcConfig';
 import { normalizeOceanBaseProtocol } from '../utils/oceanBaseProtocol';
@@ -115,7 +116,7 @@ const TriggerViewer: React.FC<TriggerViewerProps> = ({ tab }) => {
     const theme = useStore(state => state.theme);
     const addTab = useStore(state => state.addTab);
     const setActiveContext = useStore(state => state.setActiveContext);
-    const darkMode = theme === 'dark';
+    const darkMode = useResolvedDarkMode();
     const objectIdentityKey = [
         tab.connectionId,
         tab.dbName,
@@ -125,7 +126,7 @@ const TriggerViewer: React.FC<TriggerViewerProps> = ({ tab }) => {
         tab.schemaName,
     ].map((item) => String(item || '')).join('||');
 
-    // 透明 Monaco Editor 主题由 MonacoEditor 包装组件按需注册（含 stickyScroll 不透明背景）
+    // 透明 Monaco Editor 主题�?MonacoEditor 包装组件按需注册（含 stickyScroll 不透明背景�?
 
     const escapeSQLLiteral = (raw: string): string => String(raw || '').replace(/'/g, "''");
     const parseSchemaAndName = (fullName: string): { schema: string; name: string } => {

@@ -5,6 +5,7 @@ import { Table, Input, Button, Space, Tag, Tree, Spin, message, Form, InputNumbe
 import type { InputRef, RadioChangeEvent } from 'antd';
 import { ReloadOutlined, DeleteOutlined, PlusOutlined, EditOutlined, SearchOutlined, ClockCircleOutlined, CopyOutlined, FolderOpenOutlined, KeyOutlined, RightOutlined, DownOutlined } from '@ant-design/icons';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { RedisKeyInfo, RedisValue, StreamEntry } from '../types';
 import Editor from './MonacoEditor';
 import type { DataNode } from 'antd/es/tree';
@@ -46,7 +47,7 @@ const REDIS_KEY_SEARCH_INITIAL_LOAD_COUNT = 600;
 const REDIS_KEY_SEARCH_LOAD_MORE_COUNT = 1000;
 const REDIS_LARGE_KEYSPACE_THRESHOLD = 10000;
 const REDIS_LARGE_KEYSPACE_MAX_EXPANDED_GROUPS = 200;
-const REDIS_KEY_GONE_MESSAGE = 'Redis Key 不存在或已过期'; // i18n-scan: allow-raw backend sentinel
+const REDIS_KEY_GONE_MESSAGE = 'Redis Key 不存在或已过�?; // i18n-scan: allow-raw backend sentinel
 
 interface RedisViewerProps {
     connectionId: string;
@@ -187,7 +188,7 @@ const RedisViewer: React.FC<RedisViewerProps> = ({ connectionId, redisDB, tabId,
     const i18n = useOptionalI18n();
     const i18nLanguage = i18n?.language;
     const tr = useCallback((key: string, params?: I18nParams) => t(key, params, i18nLanguage), [i18nLanguage]);
-    const darkMode = theme === 'dark';
+    const darkMode = useResolvedDarkMode();
     const resolvedAppearance = resolveEffectiveAppearanceValues(memorySettings, appearance);
     const opacity = normalizeOpacityForPlatform(resolvedAppearance.opacity);
     const blur = normalizeBlurForPlatform(resolvedAppearance.blur);

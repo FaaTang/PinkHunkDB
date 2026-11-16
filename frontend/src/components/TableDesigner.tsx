@@ -8,6 +8,7 @@ import { CSS } from '@dnd-kit/utilities';
 import Editor from './MonacoEditor';
 import { TabData, ColumnDefinition, IndexDefinition, ForeignKeyDefinition, TriggerDefinition } from '../types';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { DBGetColumns, DBGetIndexes, DBQuery, DBGetForeignKeys, DBGetTriggers, DBShowCreateTable } from '../../wailsjs/go/app/App';
 import { hasIndexFormChanged, normalizeIndexFormFromRow, shouldRestoreOriginalIndex, toggleIndexSelection as getNextIndexSelection, type IndexDisplaySnapshot } from './tableDesignerIndexUtils';
 import { buildIndexCreateSqlPreview } from './tableDesignerIndexSql';
@@ -94,10 +95,10 @@ const COMMON_TYPES = [
     { value: 'json' },
 ];
 
-// 按数据库方言分组的完整字段类型列表
+// 按数据库方言分组的完整字段类型列�?
 const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
     mysql: [
-        // 数值
+        // 数�?
         { value: 'tinyint' },
         { value: 'tinyint(1)' },
         { value: 'smallint' },
@@ -107,14 +108,14 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'float' },
         { value: 'double' },
         { value: 'decimal(10,2)' },
-        // 字符串
+        // 字符�?
         { value: 'char(50)' },
         { value: 'varchar(255)' },
         { value: 'tinytext' },
         { value: 'text' },
         { value: 'mediumtext' },
         { value: 'longtext' },
-        // 二进制
+        // 二进�?
         { value: 'binary(255)' },
         { value: 'varbinary(255)' },
         { value: 'tinyblob' },
@@ -134,7 +135,7 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'bit(1)' },
     ],
     postgres: [
-        // 数值
+        // 数�?
         { value: 'smallint' },
         { value: 'integer' },
         { value: 'bigint' },
@@ -143,7 +144,7 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'numeric(10,2)' },
         { value: 'serial' },
         { value: 'bigserial' },
-        // 字符串
+        // 字符�?
         { value: 'char(50)' },
         { value: 'varchar(255)' },
         { value: 'text' },
@@ -155,7 +156,7 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'timestamp' },
         { value: 'timestamptz' },
         { value: 'interval' },
-        // 二进制
+        // 二进�?
         { value: 'bytea' },
         // JSON
         { value: 'json' },
@@ -171,7 +172,7 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'tsvector' },
     ],
     sqlserver: [
-        // 数值
+        // 数�?
         { value: 'tinyint' },
         { value: 'smallint' },
         { value: 'int' },
@@ -182,7 +183,7 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'numeric(10,2)' },
         { value: 'money' },
         { value: 'smallmoney' },
-        // 字符串
+        // 字符�?
         { value: 'char(50)' },
         { value: 'varchar(255)' },
         { value: 'varchar(max)' },
@@ -198,7 +199,7 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'datetime2' },
         { value: 'datetimeoffset' },
         { value: 'smalldatetime' },
-        // 二进制
+        // 二进�?
         { value: 'binary(255)' },
         { value: 'varbinary(255)' },
         { value: 'varbinary(max)' },
@@ -481,7 +482,7 @@ const TableDesigner: React.FC<{ tab: TabData; embedded?: boolean }> = ({ tab, em
   const theme = useStore(state => state.theme);
   const appearance = useStore(state => state.appearance);
   const i18nLanguage = useTableDesignerI18nLanguage();
-  const darkMode = theme === 'dark';
+  const darkMode = useResolvedDarkMode();
   const resizeGuideColor = darkMode ? '#f6c453' : '#1890ff';
   const readOnly = !!tab.readOnly;
   const designerTableTitle = tab.tableName || newTableName || t('table_designer.title.untitled_table', undefined, i18nLanguage);
@@ -519,23 +520,23 @@ const TableDesigner: React.FC<{ tab: TabData; embedded?: boolean }> = ({ tab, em
       setCommentEditorValue('');
   }, []);
 
-  // 透明 Monaco Editor 主题由 MonacoEditor 包装组件按需注册（含 stickyScroll 不透明背景）
+  // 透明 Monaco Editor 主题�?MonacoEditor 包装组件按需注册（含 stickyScroll 不透明背景�?
 
-  // 监听字段 Tab 容器高度，为所有 Tab 内表格计算 scroll.y
-  // 当 Tab 切换时，字段 Tab 被 display:none 导致 height=0，跳过该次更新保持有效值
+  // 监听字段 Tab 容器高度，为所�?Tab 内表格计�?scroll.y
+  // �?Tab 切换时，字段 Tab �?display:none 导致 height=0，跳过该次更新保持有效�?
   useEffect(() => {
       if (!containerRef.current) return;
       const resizeObserver = new ResizeObserver(entries => {
           for (let entry of entries) {
               const h = entry.contentRect.height;
-              // 跳过零高度观测（Tab 面板被隐藏时）
+              // 跳过零高度观测（Tab 面板被隐藏时�?
               if (h <= 0) return;
               setTableHeight(Math.max(200, h - 40));
           }
       });
       resizeObserver.observe(containerRef.current);
       return () => resizeObserver.disconnect();
-  }, []); // 不依赖 activeKey，仅挂载一次，通过零高度守卫避免 Tab 切换异常
+  }, []); // 不依�?activeKey，仅挂载一次，通过零高度守卫避�?Tab 切换异常
 
   // --- Resizable Columns State ---
   const [tableColumns, setTableColumns] = useState<any[]>([]);
@@ -1181,7 +1182,7 @@ ${selectedTrigger.statement}`;
     setTriggerExecuting(true);
 
     try {
-      // 如果是编辑模式，先删除旧触发器
+      // 如果是编辑模式，先删除旧触发�?
       if (triggerEditMode === 'edit' && selectedTrigger) {
         const dropSql = buildDropTriggerSql(selectedTrigger.name);
         const dropRes = await DBQuery(buildRpcConnectionConfig(config) as any, tab.dbName || '', dropSql);
@@ -1623,7 +1624,7 @@ ${selectedTrigger.statement}`;
       const dbType = getDbType();
       const k = kind || 'NORMAL';
       if (isMysqlLikeDialect(dbType)) {
-          // MySQL InnoDB: 所有索引均为固定方法类型
+          // MySQL InnoDB: 所有索引均为固定方法类�?
           if (k === 'FULLTEXT') return [{ label: 'FULLTEXT', value: 'FULLTEXT' }];
           if (k === 'SPATIAL') return [{ label: 'RTREE', value: 'RTREE' }];
           return [{ label: 'BTREE', value: 'BTREE' }];
@@ -1642,7 +1643,7 @@ ${selectedTrigger.statement}`;
       return [{ label: t('table_designer.option.default', undefined, i18nLanguage), value: 'DEFAULT' }];
   };
 
-  /** 根据索引类别返回固定的索引方法类型，可选类别返回 undefined */
+  /** 根据索引类别返回固定的索引方法类型，可选类别返�?undefined */
   const getFixedIndexType = (kind: IndexKind): string | undefined => {
       const dbType = getDbType();
       if (isMysqlLikeDialect(dbType)) {
@@ -2066,7 +2067,7 @@ END;`;
           message.warning(t('table_designer.message.index_maintenance_unsupported', undefined, i18nLanguage));
           return;
       }
-      // 根据选中的 key 找到对应的索引对象
+      // 根据选中�?key 找到对应的索引对�?
       const toDelete = groupedIndexes.filter(idx => selectedIndexKeys.includes(idx.key));
       if (toDelete.length === 0) {
           message.warning(t('table_designer.message.select_index_to_delete', undefined, i18nLanguage));
@@ -2363,7 +2364,7 @@ END;`;
     }),
   })), [tableColumns]);
 
-  // 字段表 Checkbox 选择列（不参与 resize，支持全选）
+  // 字段�?Checkbox 选择列（不参�?resize，支持全选）
   const allColumnKeys = useMemo(() => columns.map(c => c._key), [columns]);
   const isAllColumnsSelected = allColumnKeys.length > 0 && selectedColumnRowKeys.length === allColumnKeys.length;
   const isColumnsIndeterminate = selectedColumnRowKeys.length > 0 && selectedColumnRowKeys.length < allColumnKeys.length;
@@ -2403,7 +2404,7 @@ END;`;
       ),
   }), [selectedColumnRowKeys, allColumnKeys, isAllColumnsSelected, isColumnsIndeterminate]);
 
-  // sort 拖拽列（不参与 resize）
+  // sort 拖拽列（不参�?resize�?
   const sortColumn = useMemo(() => ({
       key: 'sort',
       width: 40,
@@ -2474,7 +2475,7 @@ END;`;
       ]);
   }, [i18nLanguage]);
 
-  // Checkbox 选择列（不参与 resize，支持全选）
+  // Checkbox 选择列（不参�?resize，支持全选）
   const allIndexKeys = groupedIndexes.map(idx => idx.key);
   const isAllSelected = allIndexKeys.length > 0 && selectedIndexKeys.length === allIndexKeys.length;
   const isIndeterminate = selectedIndexKeys.length > 0 && selectedIndexKeys.length < allIndexKeys.length;
@@ -3310,7 +3311,7 @@ END;`;
                                         selectedRowKeys: selectedTrigger ? [selectedTrigger.name] : [],
                                         onChange: (_, selectedRows) => setSelectedTrigger(selectedRows[0] || null),
                                         onSelect: (record, selected) => {
-                                            // 点击单选按钮时，如果已选中则取消
+                                            // 点击单选按钮时，如果已选中则取�?
                                             if (selectedTrigger?.name === record.name) {
                                                 setSelectedTrigger(null);
                                             } else {

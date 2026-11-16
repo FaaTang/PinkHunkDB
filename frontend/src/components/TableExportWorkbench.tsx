@@ -10,6 +10,7 @@ import {
   ExportTablesSQLWithOptions,
 } from '../../wailsjs/go/app/App';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import type {
   SavedConnection,
   TabData,
@@ -275,7 +276,6 @@ export const buildTableExportHistoryEntry = ({
 
 const TableExportWorkbench: React.FC<{ tab: TabData }> = ({ tab }) => {
   const connections = useStore((state) => state.connections);
-  const theme = useStore((state) => state.theme);
   const upsertTableExportHistory = useStore((state) => state.upsertTableExportHistory);
   const workbenchMode = resolveWorkbenchMode(tab);
   const isSingleWorkbench = workbenchMode === 'single';
@@ -324,7 +324,7 @@ const TableExportWorkbench: React.FC<{ tab: TabData }> = ({ tab }) => {
     [effectiveConnectionId, effectiveDbName, isBatchDatabasesWorkbench, isSingleWorkbench, tab.tableName, workbenchMode],
   );
   const history = useStore((state) => state.tableExportHistories[exportHistoryKey] || EMPTY_HISTORY);
-  const darkMode = theme === 'dark';
+  const darkMode = useResolvedDarkMode();
   const shellBg = darkMode ? '#101319' : '#f5f7fb';
   const panelBg = darkMode ? '#161b22' : '#ffffff';
   const panelBorder = darkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)';

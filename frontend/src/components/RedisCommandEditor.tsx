@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { Button, Space, message } from 'antd';
 import { PlayCircleOutlined, ClearOutlined } from '@ant-design/icons';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { buildRpcConnectionConfig } from '../utils/connectionRpcConfig';
 import { t, type I18nParams } from '../i18n';
 import { useOptionalI18n } from '../i18n/provider';
@@ -47,7 +48,7 @@ export const clampRedisCommandEditorHeight = (
     return Math.min(Math.max(requestedHeight, minHeight), maxHeight);
 };
 
-// 智能解析 Redis 脚本块，保护多行引号内的换行符
+// 智能解析 Redis 脚本块，保护多行引号内的换行�?
 function parseRedisScriptBlocks(script: string): string[] {
     const blocks: string[] = [];
     let currentBlock = "";
@@ -116,7 +117,7 @@ const RedisCommandEditor: React.FC<RedisCommandEditorProps> = ({ connectionId, r
     const i18nLanguage = i18n?.language;
     const tr = (key: string, params?: I18nParams) => t(key, params, i18nLanguage);
     const connection = connections.find(c => c.id === connectionId);
-    const darkMode = theme === 'dark';
+    const darkMode = useResolvedDarkMode();
     const resolvedAppearance = resolveEffectiveAppearanceValues(memorySettings, appearance);
     const opacity = normalizeOpacityForPlatform(resolvedAppearance.opacity);
     const blur = normalizeBlurForPlatform(resolvedAppearance.blur);
@@ -221,7 +222,7 @@ const RedisCommandEditor: React.FC<RedisCommandEditorProps> = ({ connectionId, r
 
         let cmdToExecute = '';
         
-        // 1. 获取用户是否有高亮选中的文本
+        // 1. 获取用户是否有高亮选中的文�?
         const selection = editorRef.current?.getSelection();
         if (selection && !selection.isEmpty()) {
             cmdToExecute = editorRef.current?.getModel()?.getValueInRange(selection) || '';
@@ -285,7 +286,7 @@ const RedisCommandEditor: React.FC<RedisCommandEditorProps> = ({ connectionId, r
             return <span style={{ color: '#569cd6' }}>(nil)</span>;
         }
         if (typeof result === 'string') {
-            // 尝试美化 JSON 字符串
+            // 尝试美化 JSON 字符�?
             try {
                 const parsed = JSON.parse(result);
                 if (typeof parsed === 'object' && parsed !== null) {
@@ -338,7 +339,7 @@ const RedisCommandEditor: React.FC<RedisCommandEditorProps> = ({ connectionId, r
         const delta = e.clientY - dragRef.current.startY;
         let newHeight = dragRef.current.startHeight + delta;
         
-        // 限制输入区高度，避免拖拽后压缩掉底部输出区。
+        // 限制输入区高度，避免拖拽后压缩掉底部输出区�?
         newHeight = clampRedisCommandEditorHeight(
             newHeight,
             containerRef.current?.clientHeight,
@@ -492,7 +493,7 @@ const RedisCommandEditor: React.FC<RedisCommandEditorProps> = ({ connectionId, r
                         results.map((item, index) => (
                             <div key={item.timestamp + index} style={{ marginBottom: 16 }}>
                                 <div style={{ color: '#569cd6', marginBottom: 6, fontWeight: 'bold' }}>
-                                    <span style={{ color: '#4CAF50', marginRight: 8 }}>➜</span>
+                                    <span style={{ color: '#4CAF50', marginRight: 8 }}>�?/span>
                                     {item.command}
                                     <span style={{ color: workbenchTheme.textMuted, fontSize: 11, marginLeft: 12, fontWeight: 'normal' }}>[{item.durationMs}ms]</span>
                                 </div>

@@ -11,6 +11,7 @@ import {
 } from "antd";
 
 import { useStore } from "../store";
+import { useResolvedDarkMode } from "../hooks/useResolvedDarkMode";
 import { JVMProbeCapabilities } from "../../wailsjs/go/app/App";
 import { buildRpcConnectionConfig } from "../utils/connectionRpcConfig";
 import { resolveJVMModeMeta } from "../utils/jvmRuntimePresentation";
@@ -35,8 +36,7 @@ const JVMOverview: React.FC<JVMOverviewProps> = ({ tab }) => {
   const connection = useStore((state) =>
     state.connections.find((item) => item.id === tab.connectionId),
   );
-  const theme = useStore((state) => state.theme);
-  const darkMode = theme === "dark";
+  const darkMode = useResolvedDarkMode();
   const providerMode =
     tab.providerMode || connection?.config.jvm?.preferredMode || "jmx";
   const readOnly = connection?.config.jvm?.readOnly !== false;
@@ -70,7 +70,7 @@ const JVMOverview: React.FC<JVMOverviewProps> = ({ tab }) => {
   const allowedModeSummary = useMemo(() => {
     const items = allowedModes.length > 0 ? allowedModes : ["jmx"];
     const delimiter =
-      language.startsWith("zh") || language === "en-US" ? "、" : ", ";
+      language.startsWith("zh") || language === "en-US" ? "�? : ", ";
     return items.map((item) => resolveJVMModeMeta(item).label).join(delimiter);
   }, [allowedModes, language]);
 

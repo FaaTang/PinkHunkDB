@@ -4,6 +4,7 @@ import { DashboardOutlined, PauseCircleOutlined, PlayCircleOutlined, ReloadOutli
 
 import { useI18n } from "../i18n/provider";
 import { useStore } from "../store";
+import { useResolvedDarkMode } from "../hooks/useResolvedDarkMode";
 import type { JVMMonitoringSessionState, TabData } from "../types";
 import { buildRpcConnectionConfig } from "../utils/connectionRpcConfig";
 import {
@@ -65,11 +66,10 @@ const resolveBackendApp = () =>
 
 const JVMMonitoringDashboard: React.FC<JVMMonitoringDashboardProps> = ({ tab }) => {
   const { t, language } = useI18n();
-  const theme = useStore((state) => state.theme);
   const connection = useStore((state) =>
     state.connections.find((item) => item.id === tab.connectionId),
   );
-  const darkMode = theme === "dark";
+  const darkMode = useResolvedDarkMode();
   const providerMode = normalizeMonitoringProviderMode(
     tab.providerMode,
     normalizeMonitoringProviderMode(connection?.config.jvm?.preferredMode, "jmx"),

@@ -25,6 +25,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { ImportData, ExportDataWithOptions, ExportQueryWithOptions, ApplyChanges, PreviewChanges, DBGetColumns, DBGetIndexes, DBGetForeignKeys, DBShowCreateTable } from '../../wailsjs/go/app/App';
 import ImportPreviewModal from './ImportPreviewModal';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { getCurrentLanguage, t } from '../i18n';
 import { useOptionalI18n } from '../i18n/provider';
 import type { ColumnDefinition, ForeignKeyDefinition, IndexDefinition } from '../types';
@@ -337,7 +338,7 @@ const DataGrid: React.FC<DataGridProps> = ({
   const isMacLike = useMemo(() => isMacLikePlatform(), []);
   const effectiveUiScale = Math.min(1.25, Math.max(0.8, Number(uiScale) || 1));
   const activeShortcutPlatform = useMemo(() => getShortcutPlatform(isMacLike), [isMacLike]);
-  const darkMode = theme === 'dark';
+  const darkMode = useResolvedDarkMode();
   const resolvedAppearance = resolveEffectiveAppearanceValues(memorySettings, appearance);
   const opacity = normalizeOpacityForPlatform(resolvedAppearance.opacity);
   const useVirtualHolderPaintHints = false;

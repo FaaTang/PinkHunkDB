@@ -157,6 +157,7 @@ import { supportsTableTruncateAction } from './tableDataDangerActions';
   import { EventsOn } from '../../wailsjs/runtime/runtime';
   import { isMacLikePlatform, normalizeOpacityForPlatform } from '../utils/appearance';
 import { useAutoFetchVisibility } from '../utils/autoFetchVisibility';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import FindInDatabaseModal from './FindInDatabaseModal';
 import { buildRpcConnectionConfig } from '../utils/connectionRpcConfig';
 import { resolveDataSourceType, getDataSourceCapabilities } from '../utils/dataSourceCapabilities';
@@ -468,7 +469,6 @@ const Sidebar: React.FC<{
   const reorderSidebarRoot = useStore(state => state.reorderSidebarRoot);
   const closeTabsByConnection = useStore(state => state.closeTabsByConnection);
   const closeTabsByDatabase = useStore(state => state.closeTabsByDatabase);
-  const theme = useStore(state => state.theme);
   const appearance = useStore(state => state.appearance);
   const memorySettings = useStore(state => state.memorySettings) ?? DEFAULT_MEMORY_SETTINGS;
   const activeContext = useStore(state => state.activeContext);
@@ -486,7 +486,7 @@ const Sidebar: React.FC<{
   const setAIPanelVisible = useStore(state => state.setAIPanelVisible);
   const addAIContext = useStore(state => state.addAIContext);
   void languagePreference;
-  const darkMode = theme === 'dark';
+  const darkMode = useResolvedDarkMode();
   const resolvedAppearance = resolveEffectiveAppearanceValues(memorySettings, appearance);
   const opacity = normalizeOpacityForPlatform(resolvedAppearance.opacity);
   const { exportProgressModal, runExportWithProgress } = useExportProgressDialog();

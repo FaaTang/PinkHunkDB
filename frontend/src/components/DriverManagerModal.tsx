@@ -6,6 +6,7 @@ import { EventsOn } from '../../wailsjs/runtime/runtime';
 import { messages } from '../../../shared/i18n/messages';
 import { catalogs } from '../i18n/catalog';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { t } from '../i18n';
 import { normalizeOpacityForPlatform } from '../utils/appearance';
 import { resolveEffectiveAppearanceValues } from '../utils/memoryPolicy';
@@ -167,7 +168,7 @@ const formatDriverLogVersionTip = (version: string) => (
   version ? t('driver.modal.operationLog.versionTip', { version }) : ''
 );
 const DRIVER_ERROR_DETAIL_SENTINEL = '__GONAVI_DRIVER_ERROR_DETAIL__';
-const DRIVER_ERROR_DETAIL_SEPARATORS = [': ', 'ï¼š', 'ï¼š ', ':'];
+const DRIVER_ERROR_DETAIL_SEPARATORS = [': ', 'ï¼?, 'ï¼?', ':'];
 const interpolateDriverMessageTemplate = (
   template: string,
   params?: Record<string, unknown>,
@@ -310,7 +311,7 @@ const stripWrappedDriverErrorDetail = (
 const formatDriverErrorMessageWithDetail = (
   fallbackMessage: string,
   detail: string,
-): string => `${fallbackMessage}${/[\u3400-\u9fff]/.test(fallbackMessage) ? 'ï¼š' : ': '}${detail}`;
+): string => `${fallbackMessage}${/[\u3400-\u9fff]/.test(fallbackMessage) ? 'ï¼? : ': '}${detail}`;
 export const resolveDriverErrorMessageText = (
   rawMessage: unknown,
   fallbackMessage: string,
@@ -467,7 +468,7 @@ const DriverManagerModal: React.FC<{ open: boolean; onClose: () => void; onBack?
   const memorySettings = useStore((state) => state.memorySettings);
   const languagePreference = useStore((state) => state.languagePreference);
   void languagePreference;
-  const darkMode = theme === 'dark';
+  const darkMode = useResolvedDarkMode();
   const resolvedAppearance = resolveEffectiveAppearanceValues(memorySettings, appearance);
   const opacity = normalizeOpacityForPlatform(resolvedAppearance.opacity);
   const driverManagerTheme = useMemo(

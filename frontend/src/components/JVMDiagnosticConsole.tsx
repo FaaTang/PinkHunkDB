@@ -25,6 +25,7 @@ import { EventsOn } from "../../wailsjs/runtime";
 import { t as translate, type I18nParams } from "../i18n";
 import { useOptionalI18n } from "../i18n/provider";
 import { useStore } from "../store";
+import { useResolvedDarkMode } from "../hooks/useResolvedDarkMode";
 import type {
   JVMDiagnosticAuditRecord,
   JVMDiagnosticCapability,
@@ -241,7 +242,7 @@ const JVMDiagnosticConsole: React.FC<JVMDiagnosticConsoleProps> = ({ tab }) => {
   const setDraft = useStore((state) => state.setJVMDiagnosticDraft);
   const appendOutput = useStore((state) => state.appendJVMDiagnosticOutput);
   const clearOutput = useStore((state) => state.clearJVMDiagnosticOutput);
-  const darkMode = useStore((state) => state.theme === "dark");
+  const darkMode = useResolvedDarkMode();
   const [capabilities, setCapabilities] = useState<JVMDiagnosticCapability[]>([]);
   const [session, setSession] = useState<JVMDiagnosticSessionHandle | null>(null);
   const [records, setRecords] = useState<JVMDiagnosticAuditRecord[]>([]);

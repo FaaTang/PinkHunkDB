@@ -11,6 +11,7 @@ import {
   PauseCircleOutlined
 } from '@ant-design/icons';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { SavedConnection } from '../types';
 import { buildRpcConnectionConfig } from '../utils/connectionRpcConfig';
 import { t, type I18nParams } from '../i18n';
@@ -42,7 +43,7 @@ const MAX_HISTORY_POINTS = 60; // Keep up to 60 data points
 const RedisMonitor: React.FC<RedisMonitorProps> = ({ connectionId, redisDB }) => {
   const connections = useStore(state => state.connections);
   const theme = useStore(state => state.theme);
-  const darkMode = theme === 'dark';
+  const darkMode = useResolvedDarkMode();
   const i18n = useOptionalI18n();
   const i18nLanguage = i18n?.language;
   const tr = (key: string, params?: I18nParams) => t(key, params, i18nLanguage);
@@ -192,8 +193,8 @@ const RedisMonitor: React.FC<RedisMonitorProps> = ({ connectionId, redisDB }) =>
           </Title>
           <Text type="secondary">
             {connection.name} 
-            {currentInfo.redis_version && ` â€¢  Redis ${currentInfo.redis_version}`}
-            {currentInfo.os && ` â€¢  ${currentInfo.os}`}
+            {currentInfo.redis_version && ` â€? Redis ${currentInfo.redis_version}`}
+            {currentInfo.os && ` â€? ${currentInfo.os}`}
           </Text>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>

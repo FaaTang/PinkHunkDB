@@ -5,6 +5,7 @@ import { Input, Spin, Empty, Dropdown, message, Tooltip, Button } from 'antd';
 import type { MenuProps } from 'antd';
 import { TableOutlined, SearchOutlined, ReloadOutlined, SortAscendingOutlined, DatabaseOutlined, ConsoleSqlOutlined, EditOutlined, CopyOutlined, SaveOutlined, DeleteOutlined, ExportOutlined, AppstoreOutlined, UnorderedListOutlined, WarningOutlined } from '@ant-design/icons';
 import { buildSidebarTablePinKey, useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { DBGetTables, DBQuery, DBShowCreateTable, ExportTableWithOptions, DropTable, RenameTable } from '../../wailsjs/go/app/App';
 import type { TabData } from '../types';
 import { useAutoFetchVisibility } from '../utils/autoFetchVisibility';
@@ -94,7 +95,7 @@ const resolveOverviewContextMenuPosition = (
 };
 
 const formatSize = (bytes: number): string => {
-    if (!bytes || bytes <= 0) return '—';
+    if (!bytes || bytes <= 0) return '�?;
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -102,7 +103,7 @@ const formatSize = (bytes: number): string => {
 };
 
 const formatRows = (count: number): string => {
-    if (count === undefined || count === null || count < 0) return '—';
+    if (count === undefined || count === null || count < 0) return '�?;
     if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
     if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
     return String(count);
@@ -249,7 +250,6 @@ const parseTableStats = (dialect: string, rows: Record<string, any>[]): TableSta
 
 const TableOverview: React.FC<TableOverviewProps> = ({ tab }) => {
     const connections = useStore(state => state.connections);
-    const theme = useStore(state => state.theme);
     const appearance = useStore(state => state.appearance);
     const addTab = useStore(state => state.addTab);
     const setActiveContext = useStore(state => state.setActiveContext);
@@ -257,7 +257,7 @@ const TableOverview: React.FC<TableOverviewProps> = ({ tab }) => {
     const addAIContext = useStore(state => state.addAIContext);
     const pinnedSidebarTables = useStore(state => state.pinnedSidebarTables);
     const setSidebarTablePinned = useStore(state => state.setSidebarTablePinned);
-    const darkMode = theme === 'dark';    const activeShortcutPlatform = getShortcutPlatform(isMacLikePlatform());
+    const darkMode = useResolvedDarkMode();    const activeShortcutPlatform = getShortcutPlatform(isMacLikePlatform());
 
     const [tables, setTables] = useState<TableStatRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -740,7 +740,7 @@ const TableOverview: React.FC<TableOverviewProps> = ({ tab }) => {
                     addAIContext(connection.id, { dbName, tableName, ddl });
                 }
             } catch {
-                // AI 入口仍可基于表名工作，DDL 获取失败不阻断打开面板。
+                // AI 入坣仝坯基于表坝工作，DDL 获坖失败丝阻断打开面板�?
             }
         }
 
@@ -783,7 +783,7 @@ const TableOverview: React.FC<TableOverviewProps> = ({ tab }) => {
     };
 
     const getSortMenuLabel = (field: SortField, labelKey: string) => {
-        const suffix = sortField === field ? (sortOrder === 'asc' ? ' ↑' : ' ↓') : '';
+        const suffix = sortField === field ? (sortOrder === 'asc' ? ' �? : ' �?) : '';
         return `${t(labelKey)}${suffix}`;
     };
 
@@ -1130,7 +1130,7 @@ const TableOverview: React.FC<TableOverviewProps> = ({ tab }) => {
                             <div style={{ minWidth: 96, textAlign: 'right' }}>
                                 <div style={{ color: textMuted }}>{t('table_overview.metric.relative_size')}</div>
                                 <div style={{ color: textPrimary, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                                    {maxCombinedSize > 0 ? `${Math.round(sizeRatio * 100)}%` : '—'}
+                                    {maxCombinedSize > 0 ? `${Math.round(sizeRatio * 100)}%` : '�?}
                                 </div>
                             </div>
                         </div>

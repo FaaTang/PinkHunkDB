@@ -43,6 +43,7 @@ import {
   PRESET_ICON_COLORS,
 } from "./DatabaseIcons";
 import { useStore } from "../store";
+import { useResolvedDarkMode } from "../hooks/useResolvedDarkMode";
 import { buildOverlayWorkbenchTheme } from "../utils/overlayWorkbenchTheme";
 import {
   isMacLikePlatform,
@@ -373,12 +374,11 @@ const ConnectionModal: React.FC<{
   const testTimerRef = useRef<number | null>(null);
   const addConnection = useStore((state) => state.addConnection);
   const updateConnection = useStore((state) => state.updateConnection);
-  const theme = useStore((state) => state.theme);
   const appearance = useStore((state) => state.appearance);
   const memorySettings = useStore((state) => state.memorySettings);
   const languagePreference = useStore((state) => state.languagePreference);
   void languagePreference;
-  const darkMode = theme === "dark";
+  const darkMode = useResolvedDarkMode();
   const resolvedAppearance = resolveEffectiveAppearanceValues(memorySettings, appearance);
   const effectiveOpacity = normalizeOpacityForPlatform(
     resolvedAppearance.opacity,
@@ -1579,7 +1579,7 @@ const ConnectionModal: React.FC<{
         } else {
           setActiveNetworkConfig("ssl");
         }
-        // 如果是 Redis 编辑模式，设置已保存的 Redis 数据库列表
+        // 如果�?Redis 编辑模式，设置已保存�?Redis 数据库列�?
         if (configType === "redis") {
           setRedisDbList(
             buildRedisDatabaseList(
@@ -2348,7 +2348,7 @@ const ConnectionModal: React.FC<{
             </div>
           ))}
         </div>
-        {/* 右侧数据源卡片 */}
+        {/* 右侧数据源卡�?*/}
         <div
           style={{
             flex: 1,

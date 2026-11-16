@@ -8,6 +8,7 @@ import { SortableContext, useSortable, horizontalListSortingStrategy } from '@dn
 import { CSS } from '@dnd-kit/utilities';
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import DataViewer from './DataViewer';
 import QueryEditor from './QueryEditor';
 import TableDesigner from './TableDesigner';
@@ -551,7 +552,6 @@ const TabContent: React.FC<{ tab: TabData; isActive: boolean; lazyHeavyModules: 
 const TabManager: React.FC = React.memo(() => {
   const tabs = useStore(state => state.tabs);
   const connections = useStore(state => state.connections);
-  const theme = useStore(state => state.theme);
   const appearance = useStore(state => state.appearance);
   const memorySettings = useStore(state => state.memorySettings);
   const languagePreference = useStore(state => state.languagePreference);
@@ -565,7 +565,8 @@ const TabManager: React.FC = React.memo(() => {
   const closeTabsToRight = useStore(state => state.closeTabsToRight);
   const closeAllTabs = useStore(state => state.closeAllTabs);
   const moveTab = useStore(state => state.moveTab);
-  const tabsNavBorderColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.09)' : 'rgba(0, 0, 0, 0.08)';
+  const darkMode = useResolvedDarkMode();
+  const tabsNavBorderColor = darkMode ? 'rgba(255, 255, 255, 0.09)' : 'rgba(0, 0, 0, 0.08)';
   const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
   const suppressClickUntilRef = useRef<number>(0);
   const sensors = useSensors(
@@ -653,7 +654,7 @@ const TabManager: React.FC = React.memo(() => {
 
       const activeTab = tabs.find(t => t.id === activeTabId);
       
-      // 🔧 runImmediately（点击"执行"）始终新建独立 tab，避免追加到已有 tab 导致 SQL 重复
+      // 🔧 runImmediately（点�?执行"）始终新建独�?tab，避免追加到已有 tab 导致 SQL 重复
       if (runImmediately) {
         const newTabId = 'tab-' + Date.now();
         const resolvedConnId = eventConnId || activeTab?.connectionId || (connections.length > 0 ? connections[0].id : '');
@@ -675,7 +676,7 @@ const TabManager: React.FC = React.memo(() => {
         return;
       }
       
-      // 插入模式：追加到已有 tab 或新建 tab
+      // 插入模式：追加到已有 tab 或新�?tab
       if (activeTab && activeTab.type === 'query') {
         window.dispatchEvent(new CustomEvent('PinkHunkDB:insert-sql-to-tab', {
           detail: { tabId: activeTab.id, sql, runImmediately: false, connectionId: eventConnId, dbName: eventDbName }

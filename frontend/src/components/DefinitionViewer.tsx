@@ -4,6 +4,7 @@ import { Button, Spin, Alert } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { TabData } from '../types';
 import { useStore } from '../store';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { DBQuery } from '../../wailsjs/go/app/App';
 import { buildRpcConnectionConfig } from '../utils/connectionRpcConfig';
 import { normalizeOceanBaseProtocol } from '../utils/oceanBaseProtocol';
@@ -130,7 +131,7 @@ const DefinitionViewer: React.FC<DefinitionViewerProps> = ({ tab }) => {
     const theme = useStore(state => state.theme);
     const addTab = useStore(state => state.addTab);
     const setActiveContext = useStore(state => state.setActiveContext);
-    const darkMode = theme === 'dark';
+    const darkMode = useResolvedDarkMode();
     const { t } = useI18n();
     const objectIdentityKey = [
         tab.connectionId,

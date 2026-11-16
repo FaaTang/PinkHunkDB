@@ -3,6 +3,7 @@ import { Table, Tag, Button, Tooltip, Empty } from 'antd';
 import { ClearOutlined, CloseOutlined, BugOutlined, RobotOutlined } from '@ant-design/icons';
 import { useStore } from '../store';
 import { useI18n } from '../i18n/provider';
+import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
 import { normalizeOpacityForPlatform } from '../utils/appearance';
 import { resolveEffectiveAppearanceValues } from '../utils/memoryPolicy';
 interface LogPanelProps {
@@ -31,10 +32,9 @@ const LogPanel: React.FC<LogPanelProps> = ({
         clearSqlLogs();
         onDismissExecutionError?.();
     };
-    const theme = useStore(state => state.theme);
     const appearance = useStore(state => state.appearance);
     const memorySettings = useStore(state => state.memorySettings);
-    const darkMode = theme === 'dark';
+    const darkMode = useResolvedDarkMode();
     const resolvedAppearance = resolveEffectiveAppearanceValues(memorySettings, appearance);
     const opacity = normalizeOpacityForPlatform(resolvedAppearance.opacity);
 
