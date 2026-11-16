@@ -117,6 +117,8 @@ export interface AppearanceSettings extends DataGridDisplaySettings {
   sidebarRailShowLabels: boolean;
   customUIFontFamily: string | null;
   customMonoFontFamily: string | null;
+  /** Brand accent hex (#rrggbb); derived hover/active/soft tokens are computed at runtime. */
+  accentColor: string;
   tabDisplay: TabDisplaySettings;
   redisDbAliases: RedisDbAliasMap;
 }
@@ -132,6 +134,7 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
   sidebarRailShowLabels: true,
   customUIFontFamily: null,
   customMonoFontFamily: null,
+  accentColor: "#ff4da6",
   tabDisplay: DEFAULT_TAB_DISPLAY_SETTINGS,
   redisDbAliases: DEFAULT_REDIS_DB_ALIASES,
   ...DEFAULT_DATA_GRID_DISPLAY_SETTINGS,
@@ -1285,7 +1288,7 @@ interface AppState {
   activeContext: { connectionId: string; dbName: string; tableName?: string } | null;
   savedQueries: SavedQuery[];
   externalSQLDirectories: ExternalSQLDirectory[];
-  theme: "light" | "dark";
+  theme: "system" | "light" | "dark";
   languagePreference: LanguagePreference;
   appearance: AppearanceSettings;
   uiScale: number;
@@ -1405,7 +1408,7 @@ interface AppState {
   saveExternalSQLDirectory: (directory: ExternalSQLDirectory) => void;
   deleteExternalSQLDirectory: (id: string) => void;
 
-  setTheme: (theme: "light" | "dark") => void;
+  setTheme: (theme: "system" | "light" | "dark") => void;
   setLanguagePreference: (languagePreference: LanguagePreference) => void;
   setAppearance: (appearance: Partial<AppearanceSettings>) => void;
   setRedisDbAlias: (
@@ -1977,8 +1980,24 @@ const hasLegacyConnectionSecrets = (
   });
 };
 
-const sanitizeTheme = (value: unknown): "light" | "dark" =>
-  value === "dark" ? "dark" : "light";
+const sanitizeTheme = (value: unknown): "system" | "light" | "dark" => {
+  if (value === "dark" || value === "light" || value === "system") {
+    return value;
+  }
+  return "system";
+};
+
+const sanitizeAccentColor = (value: unknown): string => {
+  if (typeof value !== "string") {
+    return DEFAULT_APPEARANCE.accentColor;
+  }
+  const raw = value.trim();
+  const matched = /^#?([0-9a-fA-F]{6})$/.exec(raw);
+  if (!matched) {
+    return DEFAULT_APPEARANCE.accentColor;
+  }
+  return `#${matched[1].toLowerCase()}`;
+};
 
 const sanitizeLanguagePreference = (value: unknown): LanguagePreference => {
   if (value === "system") {
@@ -2219,6 +2238,7 @@ const sanitizeAppearance = (
         : DEFAULT_APPEARANCE.sidebarRailShowLabels,
     customUIFontFamily: sanitizeFontFamilyInput(appearance.customUIFontFamily),
     customMonoFontFamily: sanitizeFontFamilyInput(appearance.customMonoFontFamily),
+    accentColor: sanitizeAccentColor(appearance.accentColor),
     tabDisplay: sanitizeTabDisplaySettings(appearance.tabDisplay),
     redisDbAliases: sanitizeRedisDbAliases(appearance.redisDbAliases),
     showDataTableVerticalBorders:
@@ -2487,7 +2507,7 @@ export const useStore = create<AppState>()(
       activeContext: null,
       savedQueries: [],
       externalSQLDirectories: [],
-      theme: "light",
+      theme: "system",
       languagePreference: DEFAULT_LANGUAGE_PREFERENCE,
       appearance: { ...DEFAULT_APPEARANCE },
       uiScale: DEFAULT_UI_SCALE,

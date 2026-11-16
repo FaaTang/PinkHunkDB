@@ -22,6 +22,14 @@ import MemorySettingsPanel from './components/MemorySettingsPanel';
 import { DEFAULT_APPEARANCE, useStore } from './store';
 import { SavedConnection, SecurityUpdateIssue, SecurityUpdateStatus } from './types';
 import { blurToFilter, normalizeBlurForPlatform, normalizeOpacityForPlatform, isWindowsPlatform } from './utils/appearance';
+import {
+  DEFAULT_ACCENT_HEX,
+  deriveAccentPalette,
+  readSystemPrefersDark,
+  resolveDarkMode,
+  sanitizeAccentHex,
+  type ThemeMode,
+} from './utils/themeAccent';
 import { buildFontFamilyOptions, DEFAULT_MONO_FONT_FAMILY, DEFAULT_UI_FONT_FAMILY, getLinuxCJKFontInstallHint, matchFontFamilyOption, resolveMonoFontFamily, resolveUIFontFamily, sanitizeFontFamilyInput, type FontFamilyOption, type InstalledFontFamily } from './utils/fontFamilies';
 import {
   DENSITY_OPTIONS,
@@ -241,7 +249,22 @@ function App() {
   const updateAutoPromptEnabled = useStore(state => state.updatePreferences.autoPromptEnabled);
   const setUpdateAutoPromptEnabled = useStore(state => state.setUpdateAutoPromptEnabled);
   const resetShortcutOptions = useStore(state => state.resetShortcutOptions);
-  const darkMode = themeMode === 'dark';
+  const [systemDark, setSystemDark] = useState(() => readSystemPrefersDark());
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => setSystemDark(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  const darkMode = resolveDarkMode(themeMode as ThemeMode, systemDark);
+  const accentPalette = useMemo(
+    () => deriveAccentPalette(sanitizeAccentHex(appearance.accentColor), darkMode),
+    [appearance.accentColor, darkMode],
+  );
   const effectiveUiScale = Math.min(MAX_UI_SCALE, Math.max(MIN_UI_SCALE, Number(uiScale) || DEFAULT_UI_SCALE));
   const effectiveFontSize = Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, Math.round(Number(fontSize) || DEFAULT_FONT_SIZE)));
   const tokenFontSize = Math.round(effectiveFontSize * effectiveUiScale);
@@ -2630,6 +2653,7 @@ function App() {
     document.body.style.fontSize = `${effectiveFontSize}px`;
     document.body.style.setProperty('--gn-font-sans', resolvedUiFontFamily);
     document.body.style.setProperty('--gn-font-mono', resolvedMonoFontFamily);
+    document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light';
     document.documentElement.style.setProperty('--PinkHunkDB-font-size', `${effectiveFontSize}px`);
     document.documentElement.style.setProperty('--gn-font-sans', resolvedUiFontFamily);
     document.documentElement.style.setProperty('--gn-font-mono', resolvedMonoFontFamily);
@@ -2642,7 +2666,14 @@ function App() {
     document.documentElement.style.setProperty('--gn-sidebar-tree-font-size', `${effectiveSidebarTreeFontSize}px`);
     document.documentElement.style.setProperty('--gn-control-height', `${tokenControlHeight}px`);
     document.documentElement.style.setProperty('--gn-control-height-sm', `${tokenControlHeightSM}px`);
+    document.documentElement.style.setProperty('--gn-accent', accentPalette.accent);
+    document.documentElement.style.setProperty('--gn-accent-2', accentPalette.accentActive);
+    document.documentElement.style.setProperty('--gn-accent-soft', accentPalette.accentSoft);
+    document.body.style.setProperty('--gn-accent', accentPalette.accent);
+    document.body.style.setProperty('--gn-accent-2', accentPalette.accentActive);
+    document.body.style.setProperty('--gn-accent-soft', accentPalette.accentSoft);
   }, [
+    accentPalette,
     darkMode,
     effectiveDataTableFontSize,
     effectiveFontSize,
@@ -2826,7 +2857,7 @@ function App() {
                   handleToggleLogPanel();
                   break;
               case 'toggleTheme':
-                  setTheme(themeMode === 'dark' ? 'light' : 'dark');
+                  setTheme(darkMode ? 'light' : 'dark');
                   break;
               case 'openShortcutManager':
                   setIsShortcutModalOpen(true);
@@ -2849,7 +2880,7 @@ function App() {
       return () => {
           window.removeEventListener('keydown', handleGlobalShortcut, true);
       };
-  }, [activeShortcutPlatform, activeTabId, handleCreateConnection, handleManualResetWindowZoom, handleOpenSettingsModal, handleTitleBarWindowToggle, handleToggleLogPanel, isMacRuntime, shortcutOptions, switchActiveTabByOffset, tabs, themeMode, setTheme, toggleAIPanel, useNativeMacWindowControls]);
+  }, [activeShortcutPlatform, activeTabId, darkMode, handleCreateConnection, handleManualResetWindowZoom, handleOpenSettingsModal, handleTitleBarWindowToggle, handleToggleLogPanel, isMacRuntime, shortcutOptions, switchActiveTabByOffset, tabs, setTheme, toggleAIPanel, useNativeMacWindowControls]);
 
   useEffect(() => {
       if (!capturingShortcutAction) {
@@ -2955,20 +2986,20 @@ function App() {
           colorFillAlter: darkMode
               ? `rgba(38, 38, 38, ${effectiveOpacity})`
               : `rgba(250, 250, 250, ${effectiveOpacity})`,
-          colorPrimary: darkMode ? '#ff8fc7' : '#ff4da6',
-          colorPrimaryHover: darkMode ? '#ffb3dc' : '#ff6eb8',
-          colorPrimaryActive: darkMode ? '#ff4da6' : '#e6005c',
-          colorInfo: darkMode ? '#ff8fc7' : '#ff4da6',
-          colorLink: darkMode ? '#ffb3dc' : '#ff4da6',
-          colorLinkHover: darkMode ? '#ffd6ea' : '#ff6eb8',
-          colorLinkActive: darkMode ? '#ff4da6' : '#e6005c',
-          colorPrimaryBg: darkMode ? 'rgba(255, 77, 166, 0.22)' : '#ffe4f0',
-          colorPrimaryBgHover: darkMode ? 'rgba(255, 77, 166, 0.30)' : '#ffd6ea',
-          colorPrimaryBorder: darkMode ? 'rgba(255, 77, 166, 0.45)' : '#ffb3dc',
-          colorPrimaryBorderHover: darkMode ? 'rgba(255, 77, 166, 0.60)' : '#ff8fc7',
-          controlItemBgActive: darkMode ? 'rgba(255, 77, 166, 0.20)' : 'rgba(255, 77, 166, 0.12)',
-          controlItemBgActiveHover: darkMode ? 'rgba(255, 77, 166, 0.28)' : 'rgba(255, 77, 166, 0.18)',
-          controlOutline: darkMode ? 'rgba(255, 77, 166, 0.50)' : 'rgba(255, 77, 166, 0.24)',
+          colorPrimary: accentPalette.colorPrimary,
+          colorPrimaryHover: accentPalette.colorPrimaryHover,
+          colorPrimaryActive: accentPalette.colorPrimaryActive,
+          colorInfo: accentPalette.colorPrimary,
+          colorLink: accentPalette.colorPrimaryHover,
+          colorLinkHover: accentPalette.colorPrimaryHover,
+          colorLinkActive: accentPalette.colorPrimaryActive,
+          colorPrimaryBg: accentPalette.colorPrimaryBg,
+          colorPrimaryBgHover: accentPalette.colorPrimaryBgHover,
+          colorPrimaryBorder: accentPalette.colorPrimaryBorder,
+          colorPrimaryBorderHover: accentPalette.colorPrimaryBorderHover,
+          controlItemBgActive: accentPalette.controlItemBgActive,
+          controlItemBgActiveHover: accentPalette.controlItemBgActiveHover,
+          controlOutline: accentPalette.controlOutline,
       },
       components: {
           Layout: {
@@ -2983,13 +3014,14 @@ function App() {
           },
           Tabs: {
               cardBg: 'transparent',
-              itemActiveColor: darkMode ? '#ffb3dc' : '#ff4da6',
-              itemHoverColor: darkMode ? '#ffd6ea' : '#ff6eb8',
-              itemSelectedColor: darkMode ? '#ffb3dc' : '#ff4da6',
-              inkBarColor: darkMode ? '#ffb3dc' : '#ff4da6',
+              itemActiveColor: accentPalette.colorPrimaryHover,
+              itemHoverColor: accentPalette.colorPrimaryHover,
+              itemSelectedColor: accentPalette.colorPrimaryHover,
+              inkBarColor: accentPalette.colorPrimaryHover,
           }
       }
   }), [
+      accentPalette,
       darkMode,
       effectiveOpacity,
       tokenControlHeight,
@@ -4438,8 +4470,9 @@ function App() {
                               </div>
                               <div style={utilityPanelStyle}>
                                   <div style={{ marginBottom: 10, fontWeight: 600 }}>{t('app.theme.mode_title')}</div>
-                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12 }}>
                                       {[
+                                          { key: 'system', label: t('app.theme.mode.system.label'), description: t('app.theme.mode.system.description') },
                                           { key: 'light', label: t('app.theme.mode.light.label'), description: t('app.theme.mode.light.description') },
                                           { key: 'dark', label: t('app.theme.mode.dark.label'), description: t('app.theme.mode.dark.description') },
                                       ].map((item) => {
@@ -4448,7 +4481,7 @@ function App() {
                                               <button
                                                   key={item.key}
                                                   type="button"
-                                                  onClick={() => setTheme(item.key as 'light' | 'dark')}
+                                                  onClick={() => setTheme(item.key as ThemeMode)}
                                                   style={{
                                                       textAlign: 'left',
                                                       padding: '14px 14px',
@@ -4473,6 +4506,28 @@ function App() {
                                               </button>
                                           );
                                       })}
+                                  </div>
+                              </div>
+                              <div style={utilityPanelStyle}>
+                                  <div style={{ marginBottom: 10, fontWeight: 600 }}>{t('app.theme.accent_title')}</div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                                      <input
+                                          type="color"
+                                          value={sanitizeAccentHex(appearance.accentColor)}
+                                          onChange={(e) => setAppearance({ accentColor: sanitizeAccentHex(e.target.value) })}
+                                          aria-label={t('app.theme.accent_title')}
+                                          style={{ width: 44, height: 32, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
+                                      />
+                                      <code style={{ fontSize: 12 }}>{sanitizeAccentHex(appearance.accentColor)}</code>
+                                      <Button
+                                          size="small"
+                                          onClick={() => setAppearance({ accentColor: DEFAULT_ACCENT_HEX })}
+                                      >
+                                          {t('app.theme.accent_reset')}
+                                      </Button>
+                                  </div>
+                                  <div style={{ ...utilityMutedTextStyle, marginTop: 8 }}>
+                                      {t('app.theme.accent_hint')}
                                   </div>
                               </div>
                           </div>

@@ -128,7 +128,7 @@ PinkHunkDB is designed for developers and DBAs who need a unified desktop experi
 
 ### UI/UX
 - Ant Design 5 based interface.
-- Light/Dark themes.
+- Theme modes: System (default) / Light / Dark, plus a custom accent color with auto-derived highlights.
 - Flexible sidebar and layout behavior.
 - Improved window creation and state restore.
 
