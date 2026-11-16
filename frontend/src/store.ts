@@ -2079,9 +2079,6 @@ const applyHydrationLowMemoryCaps = (
   };
 };
 
-const DATA_EDIT_AUTO_COMMIT_DELAY_OPTIONS = new Set([3000, 5000, 10000, 30000]);
-const SQL_EDITOR_AUTO_COMMIT_DELAY_OPTIONS = new Set([0, 3000, 5000, 10000, 30000]);
-
 const sanitizeTransactionCommitMode = (
   value: unknown,
 ): "manual" | "auto" => (value === "manual" ? "manual" : "auto");
@@ -2093,12 +2090,10 @@ const sanitizeDataEditTransactionOptions = (
     value && typeof value === "object"
       ? (value as Record<string, unknown>)
       : {};
-  const autoCommitDelayMs = Number(raw.autoCommitDelayMs);
   return {
     commitMode: sanitizeTransactionCommitMode(raw.commitMode),
-    autoCommitDelayMs: DATA_EDIT_AUTO_COMMIT_DELAY_OPTIONS.has(autoCommitDelayMs)
-      ? autoCommitDelayMs
-      : 5000,
+    // auto 固定立即提交，兼容旧配置里残留的延迟值
+    autoCommitDelayMs: 0,
     mysqlCountFallbackLocateEnabled: raw.mysqlCountFallbackLocateEnabled !== false,
   };
 };
@@ -2110,12 +2105,9 @@ const sanitizeSqlEditorTransactionOptions = (
     value && typeof value === "object"
       ? (value as Record<string, unknown>)
       : {};
-  const autoCommitDelayMs = Number(raw.autoCommitDelayMs);
   return {
     commitMode: sanitizeTransactionCommitMode(raw.commitMode),
-    autoCommitDelayMs: SQL_EDITOR_AUTO_COMMIT_DELAY_OPTIONS.has(autoCommitDelayMs)
-      ? autoCommitDelayMs
-      : 0,
+    autoCommitDelayMs: 0,
   };
 };
 
@@ -2527,7 +2519,7 @@ export const useStore = create<AppState>()(
       memorySettings: { ...DEFAULT_MEMORY_SETTINGS },
       dataEditTransactionOptions: {
         commitMode: "auto",
-        autoCommitDelayMs: 5000,
+        autoCommitDelayMs: 0,
         mysqlCountFallbackLocateEnabled: true,
       },
       sqlEditorTransactionOptions: {

@@ -91,7 +91,7 @@ PinkHunkDB is designed for developers and DBAs who need a unified desktop experi
 
 ### Data Management (DataGrid)
 - In-place cell editing.
-- Batch insert/update/delete with transaction-oriented submit/rollback (auto-commit by default; can switch to manual).
+- Batch insert/update/delete with transaction-oriented submit/rollback; shares the query editor Auto/Manual commit switch (auto commits immediately).
 - Large-field popup editor.
 - Context actions (set NULL, copy/export, etc.).
 - Smart read/write mode switching based on query context.
@@ -104,7 +104,7 @@ PinkHunkDB is designed for developers and DBAs who need a unified desktop experi
 - SQL beautify / restore (remembers pre-beautify text across sessions).
 - Optional “ask what to execute” chooser (statement / selection / all).
 - Cancellable queries; focus search within the active tab.
-- Managed DML transactions auto-commit by default; pending transactions are rolled back on app exit.
+- Managed DML / SQL transactions share one Auto/Manual switch (auto commits immediately); pending transactions are rolled back on app exit.
 
 ### Batch Export / Backup
 - Database-level and table-level batch export/backup.

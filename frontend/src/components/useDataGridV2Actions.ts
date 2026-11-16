@@ -305,7 +305,7 @@ const handleV2ColumnHeaderContextMenuAction = useCallback((action: V2ColumnHeade
               return;
           }
 
-          const isCopy = (event.ctrlKey || event.metaKey) && !event.altKey && String(event.key || '').toLowerCase() === 'c';
+          const isCopy = (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && String(event.key || '').toLowerCase() === 'c';
           if (!isCopy) return;
 
           if (cellContextMenu.visible) {

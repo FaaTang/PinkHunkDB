@@ -199,8 +199,9 @@ const handleBatchFillCells = useCallback(() => {
     updateCellSelection(new Set());
   }, [batchEditValue, batchEditSetNull, addedRows, modifiedRows, rowKeyStr, updateCellSelection, closeBatchEditModal, translateDataGrid]);
 
-  // 事件委托：在容器级别处理单元格拖选；未开启模式时，拖拽超过阈值会自动进入单元格编辑模式。
+  // 单元格编辑器（多选拖选 / 批量填充）已下线，保留函数体避免大范围拆依赖。
   useEffect(() => {
+    return;
     const container = containerRef.current;
     if (!canModifyData || !isTableSurfaceActive) return;
     if (!container) return;

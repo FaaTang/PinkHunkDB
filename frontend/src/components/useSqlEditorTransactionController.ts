@@ -109,36 +109,22 @@ export const useSqlEditorTransactionController = ({
 
   const activatePendingSqlTransaction = useCallback((transaction: PendingSqlEditorTransaction) => {
     clearAutoCommitTimer();
-    const autoCommitDelayMs = Math.max(0, Number(transaction.autoCommitDelayMs) || 0);
-    const dueAt = transaction.commitMode === 'auto' ? Date.now() + autoCommitDelayMs : null;
-    const nextTransaction = { ...transaction, autoCommitDelayMs, autoCommitDueAt: dueAt };
-    updatePendingSqlTransaction(nextTransaction);
-    if (nextTransaction.commitMode !== 'auto' || !dueAt) {
-      return;
-    }
-    if (autoCommitDelayMs === 0) {
-      setAutoCommitRemainingSeconds(0);
-      autoCommitTimerRef.current = setTimeout(() => {
-        autoCommitTimerRef.current = null;
-        setAutoCommitRemainingSeconds(null);
-        void finishPendingSqlTransaction('commit', 'auto', nextTransaction.id);
-      }, 0);
-      return;
-    }
-    const updateRemaining = () => {
-      setAutoCommitRemainingSeconds(Math.max(1, Math.ceil((dueAt - Date.now()) / 1000)));
+    // auto 模式固定立即提交，不再倒计时
+    const nextTransaction = {
+      ...transaction,
+      autoCommitDelayMs: 0,
+      autoCommitDueAt: transaction.commitMode === 'auto' ? Date.now() : null,
     };
-    updateRemaining();
-    autoCommitCountdownRef.current = setInterval(updateRemaining, 250);
+    updatePendingSqlTransaction(nextTransaction);
+    if (nextTransaction.commitMode !== 'auto') {
+      return;
+    }
+    setAutoCommitRemainingSeconds(0);
     autoCommitTimerRef.current = setTimeout(() => {
       autoCommitTimerRef.current = null;
-      if (autoCommitCountdownRef.current) {
-        clearInterval(autoCommitCountdownRef.current);
-        autoCommitCountdownRef.current = null;
-      }
       setAutoCommitRemainingSeconds(null);
       void finishPendingSqlTransaction('commit', 'auto', nextTransaction.id);
-    }, autoCommitDelayMs);
+    }, 0);
   }, [clearAutoCommitTimer, finishPendingSqlTransaction, updatePendingSqlTransaction]);
 
   useEffect(() => {

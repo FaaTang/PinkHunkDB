@@ -5328,7 +5328,7 @@ backendApp.DBQueryMulti.mockResolvedValueOnce({
     expect(textContent(renderer!.root)).not.toContain('未提交');
   });
 
-  it('auto commits SQL editor DML transactions after the configured delay', async () => {
+  it('auto commits SQL editor DML transactions immediately even if an old delay is configured', async () => {
     vi.useFakeTimers();
     storeState.sqlEditorTransactionOptions = {
       commitMode: 'auto',
@@ -5357,11 +5357,11 @@ backendApp.DBQueryMulti.mockResolvedValueOnce({
         await Promise.resolve();
       });
 
-      expect(textContent(renderer!.root)).toContain('3s 后自动提交');
+      expect(textContent(renderer!.root)).toContain('自动提交中');
       expect(backendApp.DBCommitTransaction).not.toHaveBeenCalled();
 
       await act(async () => {
-        vi.advanceTimersByTime(3000);
+        vi.runOnlyPendingTimers();
         await Promise.resolve();
         await Promise.resolve();
       });
@@ -7609,21 +7609,21 @@ storeState.languagePreference = 'en-US';
     expect(toolbarSource).toContain('gn-v2-query-toolbar-max-rows-select');
     expect(toolbarSource).toContain('QueryEditorTransactionSettings');
     expect(transactionSettingsSource).toContain('gn-v2-query-toolbar-transaction-mode-select');
-    expect(transactionSettingsSource).toContain('gn-v2-query-toolbar-transaction-delay-select');
+    expect(transactionSettingsSource).not.toContain('gn-v2-query-toolbar-transaction-delay-select');
     expect(transactionSettingsSource).toContain('query_editor.transaction.mode.tooltip');
     expect(transactionSettingsSource).toContain('query_editor.transaction.mode.manual');
     expect(transactionSettingsSource).toContain('query_editor.transaction.mode.auto');
     expect(transactionSettingsSource).not.toContain("label: '手动提交'");
     expect(transactionSettingsSource).not.toContain("label: '自动提交'");
-    expect(transactionSettingsSource).toContain('query_editor.transaction.delay.immediate_commit');
-    expect(transactionSettingsSource).toContain('query_editor.transaction.delay.seconds_commit');
-    expect(transactionSettingsSource).not.toContain("label: '3s'");
+    expect(transactionSettingsSource).not.toContain('query_editor.transaction.delay.immediate_commit');
+    expect(transactionSettingsSource).not.toContain('query_editor.transaction.delay.seconds_commit');
     expect(source).toContain('QueryEditorTransactionToolbar');
     expect(transactionToolbarSource).toContain("className={'gn-v2-query-transaction-toolbar'}");
     expect(transactionToolbarSource).toContain(": null;");
     expect(transactionToolbarSource).toContain('gn-v2-query-transaction-commit-button');
     expect(transactionToolbarSource).toContain('gn-v2-toolbar-kbd');
     expect(transactionToolbarSource).toContain('query_editor.transaction.status.auto_committing');
+    expect(transactionToolbarSource).not.toContain('query_editor.transaction.status.auto_commit_countdown');
     expect(transactionToolbarSource).toContain('onFinish');
     expect(toolbarSource).toContain('{pendingTransactionToolbar}');
     expect(toolbarSource).not.toContain('gn-v2-query-toolbar-transaction-row');

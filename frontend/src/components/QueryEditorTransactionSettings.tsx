@@ -6,39 +6,26 @@ import { useOptionalI18n } from '../i18n/provider';
 
 export type SqlEditorCommitMode = 'manual' | 'auto';
 
-type SqlEditorAutoCommitDelayOption = {
-  value: number;
-};
-
-export const SQL_EDITOR_AUTO_COMMIT_DELAY_OPTIONS: SqlEditorAutoCommitDelayOption[] = [
+/** 兼容旧引用：auto 已固定立即提交，仅保留 0 */
+export const SQL_EDITOR_AUTO_COMMIT_DELAY_OPTIONS: Array<{ value: number }> = [
   { value: 0 },
-  { value: 3000 },
-  { value: 5000 },
-  { value: 10000 },
-  { value: 30000 },
 ];
 
-type QueryEditorTransactionSettingsProps = {  commitMode: SqlEditorCommitMode;
+type QueryEditorTransactionSettingsProps = {
+  commitMode: SqlEditorCommitMode;
   autoCommitDelayMs: number;
   onCommitModeChange: (mode: SqlEditorCommitMode) => void;
   onAutoCommitDelayMsChange: (delayMs: number) => void;
 };
 
-const QueryEditorTransactionSettings: React.FC<QueryEditorTransactionSettingsProps> = ({  commitMode,
-  autoCommitDelayMs,
+const QueryEditorTransactionSettings: React.FC<QueryEditorTransactionSettingsProps> = ({
+  commitMode,
   onCommitModeChange,
-  onAutoCommitDelayMsChange,
 }) => {
   const i18n = useOptionalI18n();
   const t = i18n?.t ?? defaultTranslate;
   const [isModeSelectOpen, setIsModeSelectOpen] = React.useState(false);
   const [isModeTooltipOpen, setIsModeTooltipOpen] = React.useState(false);
-  const autoCommitDelayOptions = SQL_EDITOR_AUTO_COMMIT_DELAY_OPTIONS.map((option) => ({
-    value: option.value,
-    label: option.value === 0
-      ? t('query_editor.transaction.delay.immediate_commit')
-      : t('query_editor.transaction.delay.seconds_commit', { seconds: Math.round(option.value / 1000) }),
-  }));
   const handleModeSelectOpenChange = (open: boolean) => {
     setIsModeSelectOpen(open);
     if (open) {
@@ -50,12 +37,11 @@ const QueryEditorTransactionSettings: React.FC<QueryEditorTransactionSettingsPro
   };
 
   return (
-    <>
-      <Tooltip
-        title={t('query_editor.transaction.mode.tooltip')}
-        open={isModeTooltipOpen && !isModeSelectOpen}
-        onOpenChange={handleModeTooltipOpenChange}
-      >
+    <Tooltip
+      title={t('query_editor.transaction.mode.tooltip')}
+      open={isModeTooltipOpen && !isModeSelectOpen}
+      onOpenChange={handleModeTooltipOpenChange}
+    >
       <Select
         className={'gn-v2-query-toolbar-select gn-v2-query-toolbar-transaction-mode-select'}
         style={undefined}
@@ -67,17 +53,7 @@ const QueryEditorTransactionSettings: React.FC<QueryEditorTransactionSettingsPro
           { label: t('query_editor.transaction.mode.auto'), value: 'auto' },
         ]}
       />
-      </Tooltip>
-      {commitMode === 'auto' && (
-        <Select
-          className={'gn-v2-query-toolbar-select gn-v2-query-toolbar-transaction-delay-select'}
-          style={undefined}
-          value={autoCommitDelayMs}
-          onChange={(delayMs) => onAutoCommitDelayMsChange(Number(delayMs))}
-          options={autoCommitDelayOptions}
-        />
-      )}
-    </>
+    </Tooltip>
   );
 };
 

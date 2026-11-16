@@ -34,9 +34,7 @@ const QueryEditorTransactionToolbar: React.FC<QueryEditorTransactionToolbarProps
   const statementCount = Math.max(0, Math.floor(Number(transaction.statementCount) || 0));
   const pendingCount = statementCount > 0 ? statementCount : 1;
   const statusText = transaction.commitMode === 'auto'
-    ? autoCommitRemainingSeconds !== null && autoCommitRemainingSeconds > 0
-      ? t('query_editor.transaction.status.auto_commit_countdown', { seconds: autoCommitRemainingSeconds })
-      : t('query_editor.transaction.status.auto_committing')
+    ? t('query_editor.transaction.status.auto_committing')
     : null;
   const commitLabel = (
       <>

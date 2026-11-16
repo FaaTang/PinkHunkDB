@@ -52,6 +52,7 @@ const DataGridColumnQuickFind: React.FC<DataGridColumnQuickFindProps> = ({  inp
                 allowClear
                 size="small"
                 variant="borderless"
+                className="gn-v2-data-grid-column-quick-find-input"
                 prefix={<SearchOutlined />}
                 placeholder={translate('data_grid.column_quick_find.placeholder')}
                 value={value}

@@ -19,12 +19,9 @@ const toolbarLegacyLiterals = [
 ];
 
 const requiredKeys = [
-  'query_editor.transaction.delay.immediate_commit',
-  'query_editor.transaction.delay.seconds_commit',
   'query_editor.transaction.mode.tooltip',
   'query_editor.transaction.mode.manual',
   'query_editor.transaction.mode.auto',
-  'query_editor.transaction.status.auto_commit_countdown',
   'query_editor.transaction.status.auto_committing',
   'query_editor.transaction.action.commit',
   'query_editor.transaction.action.rollback',

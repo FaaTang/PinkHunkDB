@@ -2670,6 +2670,18 @@ storeState.languagePreference = 'en-US';
     expect(source).toContain("if (isEditableElement(event.target) && !inEditorPane) {");
   });
 
+  it('restores the editor caret after confirming the SQL execution chooser', () => {
+    const source = readFileSync(new URL('./QueryEditor.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('const applyEditorCursorSnapshot = useCallback');
+    expect(source).toContain('editor.setSelection?.({');
+    expect(source).toContain('window.requestAnimationFrame(() => {');
+    expect(source).toContain('applyEditorCursorSnapshot(snapshot)');
+    expect(source).toContain('const cursorSnapshot = sqlExecutionChooserCursorSnapshotRef.current');
+    expect(source).toContain('await handleRunWithSql(sql);');
+    expect(source).toContain('applyEditorCursorSnapshot(cursorSnapshot)');
+  });
+
   it('embeds the sql execution log as a result tab instead of a standalone workspace panel in v2', () => {
     const panelSource = readFileSync(new URL('./QueryEditorResultsPanel.tsx', import.meta.url), 'utf8');
     const editorSource = readFileSync(new URL('./QueryEditor.tsx', import.meta.url), 'utf8');
@@ -2705,21 +2717,21 @@ storeState.languagePreference = 'en-US';
     expect(toolbarSource).toContain('gn-v2-query-toolbar-max-rows-select');
     expect(toolbarSource).toContain('QueryEditorTransactionSettings');
     expect(transactionSettingsSource).toContain('gn-v2-query-toolbar-transaction-mode-select');
-    expect(transactionSettingsSource).toContain('gn-v2-query-toolbar-transaction-delay-select');
+    expect(transactionSettingsSource).not.toContain('gn-v2-query-toolbar-transaction-delay-select');
     expect(transactionSettingsSource).toContain('query_editor.transaction.mode.tooltip');
     expect(transactionSettingsSource).toContain('query_editor.transaction.mode.manual');
     expect(transactionSettingsSource).toContain('query_editor.transaction.mode.auto');
     expect(transactionSettingsSource).not.toContain("label: '手动提交'");
     expect(transactionSettingsSource).not.toContain("label: '自动提交'");
-    expect(transactionSettingsSource).toContain('query_editor.transaction.delay.immediate_commit');
-    expect(transactionSettingsSource).toContain('query_editor.transaction.delay.seconds_commit');
-    expect(transactionSettingsSource).not.toContain("label: '3s'");
+    expect(transactionSettingsSource).not.toContain('query_editor.transaction.delay.immediate_commit');
+    expect(transactionSettingsSource).not.toContain('query_editor.transaction.delay.seconds_commit');
     expect(source).toContain('QueryEditorTransactionToolbar');
     expect(transactionToolbarSource).toContain("className={'gn-v2-query-transaction-toolbar'}");
     expect(transactionToolbarSource).toContain(": null;");
     expect(transactionToolbarSource).toContain('gn-v2-query-transaction-commit-button');
     expect(transactionToolbarSource).toContain('gn-v2-toolbar-kbd');
     expect(transactionToolbarSource).toContain('query_editor.transaction.status.auto_committing');
+    expect(transactionToolbarSource).not.toContain('query_editor.transaction.status.auto_commit_countdown');
     expect(transactionToolbarSource).toContain('onFinish');
     expect(toolbarSource).toContain('{pendingTransactionToolbar}');
     expect(toolbarSource).not.toContain('gn-v2-query-toolbar-transaction-row');

@@ -13,6 +13,7 @@ export type ShortcutAction =
   | 'sendAIChatMessage'
   | 'focusSidebarSearch'
   | 'focusTabSearch'
+  | 'jumpColumn'
   | 'sidebarNewQuery'
   | 'sidebarViewTableDdl'
   | 'sidebarDesignTable'
@@ -118,6 +119,7 @@ export const SHORTCUT_ACTION_ORDER: ShortcutAction[] = [
   'sendAIChatMessage',
   'focusSidebarSearch',
   'focusTabSearch',
+  'jumpColumn',
   'sidebarDesignTable',
   'sidebarNewQuery',
   'sidebarViewTableDdl',
@@ -212,6 +214,12 @@ const SHORTCUT_ACTION_META_DEFINITIONS: Record<ShortcutAction, ShortcutActionMet
   focusTabSearch: {
     labelKey: 'app.shortcuts.action.focusTabSearch.label',
     descriptionKey: 'app.shortcuts.action.focusTabSearch.description',
+    allowInEditable: true,
+  },
+  jumpColumn: {
+    labelKey: 'app.shortcuts.action.jumpColumn.label',
+    descriptionKey: 'app.shortcuts.action.jumpColumn.description',
+    scope: 'dataGrid',
     allowInEditable: true,
   },
   sidebarNewQuery: {
@@ -342,6 +350,10 @@ export const DEFAULT_SHORTCUT_OPTIONS: ShortcutOptions = {
   focusTabSearch: {
     mac: { combo: 'Meta+F', enabled: true },
     windows: { combo: 'Ctrl+F', enabled: true },
+  },
+  jumpColumn: {
+    mac: { combo: 'Meta+Shift+C', enabled: true },
+    windows: { combo: 'Ctrl+Shift+C', enabled: true },
   },
   sidebarNewQuery: {
     mac: { combo: 'Ctrl+Shift+Q', enabled: true },

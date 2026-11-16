@@ -3466,16 +3466,37 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       sqlExecutionChooserOpenRef.current = false;
   }, []);
 
-  const restoreSqlExecutionChooserCursor = useCallback(() => {
+  const applyEditorCursorSnapshot = useCallback((snapshot: { lineNumber: number; column: number } | null | undefined) => {
       const editor = editorRef.current;
-      const snapshot = sqlExecutionChooserCursorSnapshotRef.current;
-      sqlExecutionChooserCursorSnapshotRef.current = null;
       if (!editor || !snapshot) {
-          return;
+          return false;
       }
       editor.setPosition?.(snapshot);
+      editor.setSelection?.({
+          startLineNumber: snapshot.lineNumber,
+          startColumn: snapshot.column,
+          endLineNumber: snapshot.lineNumber,
+          endColumn: snapshot.column,
+      });
+      lastEditorCursorPositionRef.current = snapshot;
       editor.focus?.();
+      return true;
   }, []);
+
+  const restoreSqlExecutionChooserCursor = useCallback(() => {
+      const snapshot = sqlExecutionChooserCursorSnapshotRef.current;
+      sqlExecutionChooserCursorSnapshotRef.current = null;
+      if (!snapshot) {
+          return;
+      }
+      applyEditorCursorSnapshot(snapshot);
+      // 关闭弹层 / 展开结果面板会抢焦点，补帧把光标钉回原位置
+      window.requestAnimationFrame(() => {
+          applyEditorCursorSnapshot(snapshot);
+          window.requestAnimationFrame(() => applyEditorCursorSnapshot(snapshot));
+      });
+      window.setTimeout(() => applyEditorCursorSnapshot(snapshot), 0);
+  }, [applyEditorCursorSnapshot]);
 
   const closeSqlExecutionChooser = useCallback(() => {
       const shouldRestoreCursor = sqlExecutionChooserOpenRef.current || !!sqlExecutionChooserDisposeRef.current;
@@ -4453,7 +4474,8 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       }
 
       disposeSqlExecutionChooser();
-      const openingPosition = normalizeEditorPosition(editor.getPosition?.());
+      const openingPosition = normalizeEditorPosition(editor.getPosition?.())
+          || normalizeEditorPosition(lastEditorCursorPositionRef.current);
       sqlExecutionChooserCursorSnapshotRef.current = openingPosition
           ? { lineNumber: openingPosition.lineNumber, column: openingPosition.column }
           : null;
@@ -4467,8 +4489,21 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
               selectedId = nextId;
           },
           onConfirm: (sql) => {
+              const cursorSnapshot = sqlExecutionChooserCursorSnapshotRef.current
+                  ? { ...sqlExecutionChooserCursorSnapshotRef.current }
+                  : null;
               closeSqlExecutionChooser();
-              void handleRunWithSql(sql);
+              void (async () => {
+                  try {
+                      await handleRunWithSql(sql);
+                  } finally {
+                      // 执行结束后结果区布局变化仍可能吞掉焦点，再钉一次原光标
+                      if (cursorSnapshot) {
+                          applyEditorCursorSnapshot(cursorSnapshot);
+                          window.requestAnimationFrame(() => applyEditorCursorSnapshot(cursorSnapshot));
+                      }
+                  }
+              })();
           },
           onCancel: closeSqlExecutionChooser,
           onOpenSettings: () => {
@@ -4479,6 +4514,7 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       });
       sqlExecutionChooserDisposeRef.current = dispose;
   }, [
+      applyEditorCursorSnapshot,
       closeSqlExecutionChooser,
       connections,
       currentConnectionId,
@@ -5438,12 +5474,11 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
         }}
         onDatabaseChange={setCurrentDb}
         onMaxRowsChange={handleToolbarMaxRowsChange}
-        onCommitModeChange={(mode) => setSqlEditorTransactionOptions(
-            mode === 'auto'
-                ? { commitMode: mode, autoCommitDelayMs: 0 }
-                : { commitMode: mode },
-        )}
-        onAutoCommitDelayMsChange={(delayMs) => setSqlEditorTransactionOptions({ autoCommitDelayMs: delayMs })}
+        onCommitModeChange={(mode) => setSqlEditorTransactionOptions({
+            commitMode: mode,
+            autoCommitDelayMs: 0,
+        })}
+        onAutoCommitDelayMsChange={() => setSqlEditorTransactionOptions({ autoCommitDelayMs: 0 })}
         onCaptureEditorCursorPosition={captureEditorCursorPosition}
         onRun={requestRun}
         onCancel={handleCancel}

@@ -53,7 +53,6 @@ const DataGridShell: React.FC<DataGridShellProps> = (props) => {
     applyRowEditor,
     applySortInfo,
     autoCommitFailedTokenRef,
-    autoCommitRemainingSeconds,
     batchEditModalOpen,
     batchEditSetNull,
     batchEditValue,
@@ -89,6 +88,7 @@ const DataGridShell: React.FC<DataGridShellProps> = (props) => {
     columnMetaCacheRef,
     columnMetaMap,
     columnMetaMapByLowerName,
+    columnQuickFindOpen,
     columnQuickFindOptions,
     columnQuickFindText,
     connectionId,
@@ -104,8 +104,6 @@ const DataGridShell: React.FC<DataGridShellProps> = (props) => {
     currentTextRow,
     darkMode,
     dataContextValue,
-    dataEditAutoCommitDelayMs,
-    dataEditCommitMode,
     dataPanelDirtyRef,
     dataPanelIsJson,
     dataPanelOpen,
@@ -208,7 +206,6 @@ const DataGridShell: React.FC<DataGridShellProps> = (props) => {
     jsonViewText,
     legacyAiButtonStyle,
     loading,
-    localizedDataEditAutoCommitDelayOptions,
     looksLikeJsonText,
     mergedDisplayData,
     noAutoCapInputProps,
@@ -276,8 +273,8 @@ const DataGridShell: React.FC<DataGridShellProps> = (props) => {
     setCellContextMenu,
     setCellEditMode,
     setCellEditorValue,
+    setColumnQuickFindOpen,
     setColumnQuickFindText,
-    setDataEditTransactionOptions,
     setDataPanelValue,
     setDdlModalOpen,
     setDdlViewLayout,
@@ -504,20 +501,6 @@ const renderDataTableView = () => (
       if (filterConditions.length === 0 && !showFilter) addFilter();
   }, [onToggleFilter, filterConditions.length, showFilter]);
 
-  const handleToggleCellEditMode = useCallback(() => {
-      const next = !cellEditMode;
-      if (!next) {
-          closeCellEditMode();
-      } else {
-          cellEditModeRef.current = true;
-          setCellEditMode(true);
-          resetCellSelection();
-      }
-      void message.info(next
-          ? translateDataGrid('data_grid.message.cell_edit_mode_entered')
-          : translateDataGrid('data_grid.message.cell_edit_mode_exited')).then();
-  }, [cellEditMode, closeCellEditMode, resetCellSelection, translateDataGrid]);
-
   const handleRequestAiInsight = useCallback(() => {
       const sampleData = mergedDisplayData.slice(0, 10);
       const prompt = translateDataGrid('data_grid.ai_insight.prompt', {
@@ -599,15 +582,8 @@ const renderDataTableView = () => (
             canModifyData={canModifyData}
             selectedRowKeysLength={selectedRowKeys.length}
             allSelectedAreDeleted={allSelectedAreDeleted}
-            cellEditMode={cellEditMode}
-            selectedCellsSize={selectedCells.size}
-            copiedCellPatchColumnCount={copiedCellPatch ? Object.keys(copiedCellPatch.values).length : 0}
             hasChanges={hasChanges}
             pendingChangeCount={pendingChangeCount}
-            dataEditCommitMode={dataEditCommitMode}
-            dataEditAutoCommitDelayMs={dataEditAutoCommitDelayMs}
-            dataEditAutoCommitDelayOptions={localizedDataEditAutoCommitDelayOptions}
-            autoCommitRemainingSeconds={autoCommitRemainingSeconds}
             canImport={canImport}
             canExport={canExport}
             isQueryResultExport={isQueryResultExport}
@@ -634,18 +610,11 @@ const renderDataTableView = () => (
             queryResultCopyMenu={queryResultCopyMenu}
             dbType={dbType}
             onResetPendingChanges={handleResetPendingChanges}
-            onDataEditCommitModeChange={(mode) => setDataEditTransactionOptions({ commitMode: mode })}
-            onDataEditAutoCommitDelayChange={(delayMs) => setDataEditTransactionOptions({ autoCommitDelayMs: delayMs })}
             onRefresh={handleRefreshGrid}
             onToggleFilterClick={handleToggleFilterWithDefault}
             onAddRow={handleAddRow}
             onUndoDeleteSelected={handleUndoDeleteSelected}
             onDeleteSelected={handleDeleteSelected}
-            onToggleCellEditMode={handleToggleCellEditMode}
-            onCopySelectedCellsToClipboard={handleCopySelectedCellsToClipboard}
-            onCopySelectedColumnsFromRow={handleCopySelectedColumnsFromRow}
-            onOpenBatchEditModal={openBatchEditModal}
-            onPasteCopiedColumnsToSelectedRows={() => handlePasteCopiedColumnsToSelectedRows()}
             onCommit={handleCommit}
             onPreviewChanges={handlePreviewChanges}
             onImport={handleImport}
@@ -928,6 +897,8 @@ const renderDataTableView = () => (
                 resultViewSwitcher={resultViewSwitcher}
                 columnInfoSettingContent={columnInfoSettingContent}
                 columnQuickFindContent={columnQuickFindContent}
+                columnQuickFindOpen={columnQuickFindOpen}
+                onColumnQuickFindOpenChange={setColumnQuickFindOpen}
                 pageFindContent={visiblePageFindContent}
                 paginationContent={paginationContent}
                 onViewModeChange={handleViewModeChange}

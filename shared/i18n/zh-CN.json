@@ -2653,6 +2653,8 @@
   "app.shortcuts.action.focusSidebarSearch.label": "聚焦侧边栏搜索",
   "app.shortcuts.action.focusTabSearch.description": "定位到当前标签页内的搜索（SQL 查找、Redis Key 搜索、表格页内查找等）",
   "app.shortcuts.action.focusTabSearch.label": "当前标签页搜索",
+  "app.shortcuts.action.jumpColumn.description": "打开或关闭数据表格的「跳列」输入框，并聚焦以便直接输入",
+  "app.shortcuts.action.jumpColumn.label": "跳列",
   "app.shortcuts.action.newConnection.description": "创建新的数据库、运行时或其他数据源连接",
   "app.shortcuts.action.newConnection.label": "新建数据源",
   "app.shortcuts.action.sidebarDesignTable.description": "选中侧边栏中的表时，打开表设计页（与右键「设计表」一致）",

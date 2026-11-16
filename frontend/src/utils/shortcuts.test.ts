@@ -433,6 +433,14 @@ describe('shortcut defaults', () => {
       mac: { combo: 'Meta+Shift+H', enabled: true },
       windows: { combo: 'Ctrl+H', enabled: true },
     });
+    expect(DEFAULT_SHORTCUT_OPTIONS.jumpColumn).toEqual({
+      mac: { combo: 'Meta+Shift+C', enabled: true },
+      windows: { combo: 'Ctrl+Shift+C', enabled: true },
+    });
+    expect(SHORTCUT_ACTION_META.jumpColumn).toMatchObject({
+      scope: 'dataGrid',
+      allowInEditable: true,
+    });
   });
 
   it('registers connection and AI panel actions as real shortcuts', () => {

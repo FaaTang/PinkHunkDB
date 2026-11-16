@@ -25,6 +25,8 @@ export interface DataGridSecondaryActionsProps {  canViewDdl: boolean;
   resultViewSwitcher: React.ReactNode;
   columnInfoSettingContent: React.ReactNode;
   columnQuickFindContent: React.ReactNode;
+  columnQuickFindOpen?: boolean;
+  onColumnQuickFindOpenChange?: (open: boolean) => void;
   pageFindContent: React.ReactNode;
   paginationContent: React.ReactNode;
   onViewModeChange: (nextMode: GridViewMode) => void;
@@ -46,6 +48,8 @@ const DataGridSecondaryActions: React.FC<DataGridSecondaryActionsProps> = ({  c
   resultViewSwitcher,
   columnInfoSettingContent,
   columnQuickFindContent,
+  columnQuickFindOpen,
+  onColumnQuickFindOpenChange,
   pageFindContent,
   paginationContent,
   onViewModeChange,
@@ -103,11 +107,37 @@ const DataGridSecondaryActions: React.FC<DataGridSecondaryActionsProps> = ({  c
               {translate('data_grid.secondary.column_display')}
             </Button>
           </Popover>
-          <Popover trigger="click" placement="topRight" content={<div style={{ padding: 4 }}>{columnQuickFindContent}</div>}>
+          <Popover
+            trigger="click"
+            placement="topRight"
+            open={columnQuickFindOpen}
+            onOpenChange={onColumnQuickFindOpenChange}
+            afterOpenChange={(open) => {
+              if (!open) {
+                return;
+              }
+              window.requestAnimationFrame(() => {
+                const popover = document.querySelector(
+                  '[data-grid-column-quick-find-popover="true"]',
+                );
+                const input = popover?.querySelector('input') as HTMLInputElement | null;
+                if (!input) {
+                  return;
+                }
+                input.focus();
+                input.select();
+              });
+            }}
+            content={(
+              <div data-grid-column-quick-find-popover="true" style={{ padding: 4 }}>
+                {columnQuickFindContent}
+              </div>
+            )}
+          >
             <Button
               data-grid-column-quick-find-action="true"
               size="small"
-              type="text"
+              type={columnQuickFindOpen ? 'primary' : 'text'}
               icon={<AimOutlined />}
             >
               {translate('data_grid.secondary.jump_column')}

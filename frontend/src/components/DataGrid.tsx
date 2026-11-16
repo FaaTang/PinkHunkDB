@@ -76,7 +76,13 @@ import {
 } from './dataGridClipboardExport';
 import { applyNoAutoCapAttributesWithin, noAutoCapInputProps } from '../utils/inputAutoCap';
 import { tryFormatJsonPreservingNumberLiterals } from '../utils/jsonFormat';
-import { DEFAULT_SHORTCUT_OPTIONS, getShortcutPlatform, resolveShortcutDisplay } from '../utils/shortcuts';
+import {
+  DEFAULT_SHORTCUT_OPTIONS,
+  getShortcutPlatform,
+  isShortcutMatch,
+  resolveShortcutBinding,
+  resolveShortcutDisplay,
+} from '../utils/shortcuts';
 import {
     TEMPORAL_FORMATS,
     formatFromDayjs,
@@ -173,7 +179,6 @@ import {
     DATE_TIME_CACHE_LIMIT,
     TABLE_CELL_PREVIEW_MAX_CHARS,
     ROW_NUMBER_COLUMN_WIDTH,
-    DATA_EDIT_AUTO_COMMIT_DELAY_OPTIONS,
     DATA_GRID_DISPLAY_RENDER_VERSION,
     DATA_GRID_VIRTUAL_EDIT_RENDER_VERSION,
     DEFAULT_GRID_MONO_FONT_FAMILY,
@@ -301,8 +306,7 @@ const DataGrid: React.FC<DataGridProps> = ({
   const uiScale = useStore(state => state.uiScale);
   const queryOptions = useStore(state => state.queryOptions);
   const setQueryOptions = useStore(state => state.setQueryOptions);
-  const dataEditTransactionOptions = useStore(state => state.dataEditTransactionOptions);
-  const setDataEditTransactionOptions = useStore(state => state.setDataEditTransactionOptions);
+  const sqlEditorTransactionOptions = useStore(state => state.sqlEditorTransactionOptions);
   const tableColumnOrders = useStore(state => state.tableColumnOrders);
   const enableColumnOrderMemory = useStore(state => state.enableColumnOrderMemory);
   const setTableColumnOrder = useStore(state => state.setTableColumnOrder);
@@ -322,13 +326,6 @@ const DataGrid: React.FC<DataGridProps> = ({
           return t(key, params, language);
       },
       [language]
-  );
-  const localizedDataEditAutoCommitDelayOptions = useMemo(
-      () => DATA_EDIT_AUTO_COMMIT_DELAY_OPTIONS.map((item) => ({
-          value: item.value,
-          label: translateDataGrid('data_grid.toolbar.commit_delay.seconds', { seconds: item.seconds }),
-      })),
-      [translateDataGrid]
   );
   const rowLocatorMessages = useMemo<RowLocatorMessages>(() => ({
       noSafeLocator: () => translateDataGrid('data_grid.message.no_safe_locator'),
@@ -400,10 +397,12 @@ const DataGrid: React.FC<DataGridProps> = ({
   const [localHiddenColumns, setLocalHiddenColumns] = useState<string[]>([]);
   const [columnSearchText, setColumnSearchText] = useState('');
   const [columnQuickFindText, setColumnQuickFindText] = useState('');
+  const [columnQuickFindOpen, setColumnQuickFindOpen] = useState(false);
   const [highlightedColumnName, setHighlightedColumnName] = useState('');
   const [pageFindText, setPageFindText] = useState('');
   const [activePageFindMatchIndex, setActivePageFindMatchIndex] = useState(-1);
   const columnQuickFindHighlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const columnQuickFindOpenRef = useRef(false);
   const deferredColumnQuickFindText = useDeferredValue(columnQuickFindText);
   // 当前页查找需要即时反馈；否则清空输入框后高亮会继续停留一拍。
   const normalizedPageFindText = useMemo(() => normalizeDataGridFindQuery(pageFindText), [pageFindText]);
@@ -414,10 +413,21 @@ const DataGrid: React.FC<DataGridProps> = ({
 
   useEffect(() => {
       setColumnQuickFindText('');
+      setColumnQuickFindOpen(false);
       setHighlightedColumnName('');
       setPageFindText('');
       setActivePageFindMatchIndex(-1);
   }, [connectionId, dbName, tableName]);
+
+  useEffect(() => {
+      columnQuickFindOpenRef.current = columnQuickFindOpen;
+  }, [columnQuickFindOpen]);
+
+  useEffect(() => {
+      if (!surfaceActive) {
+          setColumnQuickFindOpen(false);
+      }
+  }, [surfaceActive]);
 
   useEffect(() => () => {
       if (columnQuickFindHighlightTimerRef.current) {
@@ -1348,6 +1358,38 @@ const DataGrid: React.FC<DataGridProps> = ({
   });
 
   useEffect(() => {
+      if (!isTableSurfaceActive) {
+          setColumnQuickFindOpen(false);
+      }
+  }, [isTableSurfaceActive]);
+
+  useEffect(() => {
+      if (!surfaceActive || !isTableSurfaceActive) {
+          return;
+      }
+      const binding = resolveShortcutBinding(
+          shortcutOptions ?? DEFAULT_SHORTCUT_OPTIONS,
+          'jumpColumn',
+          activeShortcutPlatform,
+      );
+      if (!binding?.enabled) {
+          return;
+      }
+      const onKeyDown = (event: KeyboardEvent) => {
+          if (!isShortcutMatch(event, binding.combo)) {
+              return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          setColumnQuickFindOpen(!columnQuickFindOpenRef.current);
+      };
+      window.addEventListener('keydown', onKeyDown, true);
+      return () => {
+          window.removeEventListener('keydown', onKeyDown, true);
+      };
+  }, [activeShortcutPlatform, isTableSurfaceActive, shortcutOptions, surfaceActive]);
+
+  useEffect(() => {
       const handleExternalViewModeChange = (event: Event) => {
           const detail = (event as CustomEvent<any>)?.detail || {};
           if (String(detail.connectionId || '') !== String(connectionId || '')) return;
@@ -1515,13 +1557,9 @@ const DataGrid: React.FC<DataGridProps> = ({
 
   const pendingChangeCount = addedRows.length + Object.keys(modifiedRows).length + deletedRowKeys.size;
   const hasChanges = pendingChangeCount > 0;
-  const dataEditCommitMode = dataEditTransactionOptions?.commitMode === 'manual' ? 'manual' : 'auto';
-  const dataEditAutoCommitDelayMs = DATA_EDIT_AUTO_COMMIT_DELAY_OPTIONS.some((item) => item.value === dataEditTransactionOptions?.autoCommitDelayMs)
-      ? Number(dataEditTransactionOptions?.autoCommitDelayMs)
-      : 5000;
-  const [autoCommitRemainingSeconds, setAutoCommitRemainingSeconds] = useState<number | null>(null);
+  // 与查询编辑器共用一套 Auto/Manual：只读 sqlEditorTransactionOptions
+  const dataEditCommitMode = sqlEditorTransactionOptions?.commitMode === 'manual' ? 'manual' : 'auto';
   const autoCommitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const autoCommitCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoCommitChangeTokenRef = useRef(0);
   const autoCommitFailedTokenRef = useRef(-1);
   const clearAutoCommitTimer = useCallback(() => {
@@ -1529,11 +1567,6 @@ const DataGrid: React.FC<DataGridProps> = ({
           clearTimeout(autoCommitTimerRef.current);
           autoCommitTimerRef.current = null;
       }
-      if (autoCommitCountdownRef.current) {
-          clearInterval(autoCommitCountdownRef.current);
-          autoCommitCountdownRef.current = null;
-      }
-      setAutoCommitRemainingSeconds(null);
   }, []);
 
   const allSelectedAreDeleted = useMemo(() => {
@@ -2928,29 +2961,17 @@ const DataGrid: React.FC<DataGridProps> = ({
           return;
       }
 
-      const delayMs = dataEditAutoCommitDelayMs;
-      const dueAt = Date.now() + delayMs;
-      const updateRemaining = () => {
-          setAutoCommitRemainingSeconds(Math.max(1, Math.ceil((dueAt - Date.now()) / 1000)));
-      };
+      // auto 模式立即提交，不再倒计时等待
       clearAutoCommitTimer();
-      updateRemaining();
-      autoCommitCountdownRef.current = setInterval(updateRemaining, 250);
       autoCommitTimerRef.current = setTimeout(() => {
           autoCommitTimerRef.current = null;
-          if (autoCommitCountdownRef.current) {
-              clearInterval(autoCommitCountdownRef.current);
-              autoCommitCountdownRef.current = null;
-          }
-          setAutoCommitRemainingSeconds(null);
           void handleCommit('auto');
-      }, delayMs);
+      }, 0);
 
       return clearAutoCommitTimer;
   }, [
       canModifyData,
       dataEditCommitMode,
-      dataEditAutoCommitDelayMs,
       hasChanges,
       pendingChangeCount,
       handleCommit,
@@ -4184,7 +4205,6 @@ const DataGrid: React.FC<DataGridProps> = ({
         applyRowEditor,
         applySortInfo,
         autoCommitFailedTokenRef,
-        autoCommitRemainingSeconds,
         batchEditModalOpen,
         batchEditSetNull,
         batchEditValue,
@@ -4220,6 +4240,7 @@ const DataGrid: React.FC<DataGridProps> = ({
         columnMetaCacheRef,
         columnMetaMap,
         columnMetaMapByLowerName,
+        columnQuickFindOpen,
         columnQuickFindOptions,
         columnQuickFindText,
         connectionId,
@@ -4235,8 +4256,6 @@ const DataGrid: React.FC<DataGridProps> = ({
         currentTextRow,
         darkMode,
         dataContextValue,
-        dataEditAutoCommitDelayMs,
-        dataEditCommitMode,
         dataPanelDirtyRef,
         dataPanelIsJson,
         dataPanelOpen,
@@ -4338,7 +4357,6 @@ const DataGrid: React.FC<DataGridProps> = ({
         jsonEditorValue,
         jsonViewText,
         loading,
-        localizedDataEditAutoCommitDelayOptions,
         looksLikeJsonText,
         mergedDisplayData,
         noAutoCapInputProps,
@@ -4406,8 +4424,9 @@ const DataGrid: React.FC<DataGridProps> = ({
         setCellContextMenu,
         setCellEditMode,
         setCellEditorValue,
+        setColumnQuickFindOpen,
         setColumnQuickFindText,
-        setDataEditTransactionOptions,
+        sqlEditorTransactionOptions,
         setDataPanelValue,
         setDdlModalOpen,
         setDdlViewLayout,

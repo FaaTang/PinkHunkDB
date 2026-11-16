@@ -1049,21 +1049,13 @@ describe('DataGrid layout', () => {
       'data_grid.toolbar.undo_delete',
       'data_grid.toolbar.delete_selected',
       'data_grid.toolbar.selected_count',
-      'data_grid.toolbar.cell_editor',
-      'data_grid.toolbar.copy_selection',
-      'data_grid.toolbar.copy_selection_columns',
-      'data_grid.toolbar.batch_fill',
-      'data_grid.toolbar.paste_to_selected_rows',
-      'data_grid.toolbar.copied_columns_count',
       'data_grid.toolbar.commit_label',
-      'data_grid.toolbar.commit',
       'data_grid.toolbar.preview_sql_generate',
       'data_grid.toolbar.preview_sql',
       'data_grid.toolbar.rollback',
       'data_grid.toolbar.import',
       'data_grid.toolbar.export',
       'data_grid.toolbar.copy',
-      'data_grid.toolbar.ai_insight',
       'data_grid.toolbar.ai_insight_short',
       'data_grid.toolbar.ai_insight_tooltip',
       'data_grid.toolbar.cancel_count',
@@ -1097,15 +1089,12 @@ describe('DataGrid layout', () => {
     });
     [
       /translate\('data_grid\.toolbar\.selected_count', \{ count: selectedRowKeysLength \}\)/,
-      /translate\('data_grid\.toolbar\.copy_selection', \{ count: selectedCellsSize \}\)/,
-      /translate\('data_grid\.toolbar\.copy_selection_columns', \{ count: selectedCellsSize \}\)/,
-      /translate\('data_grid\.toolbar\.batch_fill', \{ count: selectedCellsSize \}\)/,
-      /translate\('data_grid\.toolbar\.paste_to_selected_rows', \{ count: selectedRowKeysLength \}\)/,
-      /translate\('data_grid\.toolbar\.copied_columns_count', \{ count: copiedCellPatchColumnCount \}\)/,
       /translate\('data_grid\.toolbar\.commit_label'\)/,
     ].forEach((pattern) => {
       expect(toolbarFrameSource).toMatch(pattern);
     });
+    expect(toolbarFrameSource).not.toContain('data_grid.toolbar.cell_editor');
+    expect(toolbarFrameSource).not.toContain('onToggleCellEditMode');
     [
       '查询结果',
       '刷新',
@@ -1113,11 +1102,6 @@ describe('DataGrid layout', () => {
       '添加行',
       '撤销删除',
       '删除选中',
-      '单元格编辑器',
-      '复制选区',
-      '复制选区列值',
-      '批量填充',
-      '粘贴到选中行',
       '提交事务',
       '生成预览 SQL',
       '预览SQL',
@@ -1194,8 +1178,8 @@ describe('DataGrid layout', () => {
     });
     expect(dataGridSource.match(/message\.info\(translateDataGrid\('data_grid\.message\.no_copyable_rows'\)\)/g) ?? []).toHaveLength(2);
     expect(dataGridSource).not.toContain("message.info('未识别到可复制的行')");
-    expect(dataGridSource).toContain("translateDataGrid('data_grid.message.cell_edit_mode_entered')");
-    expect(dataGridSource).toContain("translateDataGrid('data_grid.message.cell_edit_mode_exited')");
+    expect(dataGridSource).not.toContain("translateDataGrid('data_grid.message.cell_edit_mode_entered')");
+    expect(dataGridSource).not.toContain("translateDataGrid('data_grid.message.cell_edit_mode_exited')");
     expect(dataGridSource).not.toContain("'已进入单元格编辑模式，可拖拽选择多个单元格'");
     expect(dataGridSource).not.toContain("'已退出单元格编辑模式'");
 
@@ -2305,6 +2289,17 @@ describe('DataGrid layout', () => {
     expect(source).toContain('syncExternalScrollFromTargets();');
     expect(source).toContain("const columnQuickFindContent = isTableSurfaceActive ? (");
     expect(secondaryActionsSource).toContain('data-grid-column-quick-find-action="true"');
+    expect(secondaryActionsSource).toContain('columnQuickFindOpen');
+    expect(secondaryActionsSource).toContain('onColumnQuickFindOpenChange');
+    expect(secondaryActionsSource).toContain('afterOpenChange');
+    expect(secondaryActionsSource).toContain('data-grid-column-quick-find-popover="true"');
+    expect(columnQuickFindSource).toContain('gn-v2-data-grid-column-quick-find-input');
+    expect(source).toContain("resolveShortcutBinding(");
+    expect(source).toContain("'jumpColumn'");
+    expect(source).toContain('setColumnQuickFindOpen(!columnQuickFindOpenRef.current)');
+    expect(readFileSync(new URL('./useDataGridV2Actions.ts', import.meta.url), 'utf8')).toContain(
+      "!event.shiftKey && String(event.key || '').toLowerCase() === 'c'",
+    );
     expect(source).toContain('type VirtualTableScrollReference = TableReference & {');
     expect(source).toContain('const tableRef = useRef<VirtualTableScrollReference | null>(null);');
     expect(source).toContain('resolveDataGridHorizontalWheelDelta({');

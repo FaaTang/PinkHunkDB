@@ -224,6 +224,8 @@ describe("i18n catalog", () => {
       "app.shortcuts.action.focusSidebarSearch.label",
       "app.shortcuts.action.focusTabSearch.description",
       "app.shortcuts.action.focusTabSearch.label",
+      "app.shortcuts.action.jumpColumn.description",
+      "app.shortcuts.action.jumpColumn.label",
       "app.shortcuts.action.newConnection.description",
       "app.shortcuts.action.newConnection.label",
       "app.shortcuts.action.sidebarDesignTable.description",
