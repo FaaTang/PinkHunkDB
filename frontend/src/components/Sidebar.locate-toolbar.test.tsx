@@ -1159,7 +1159,7 @@ describe('Sidebar locate toolbar', () => {
     expect(titleRenderSource).toContain("if (connectionStates[node.key] === 'loading') status = 'loading';");
     expect(v2ContextMenuSource).toContain("const statusMap = new Map<string, 'loading' | 'live' | 'error' | 'idle'>();");
     expect(v2ContextMenuSource).toContain("value === 'loading' ? 'loading'");
-    expect(css).toMatch(/\.gn-v2-tree-status\.is-loading::before \{[^}]*border: 2px solid rgba\(37, 99, 235, 0\.24\);[^}]*animation: gn-v2-tree-status-spin 0\.8s linear infinite;/s);
+    expect(css).toMatch(/\.gn-v2-tree-status\.is-loading::before \{[^}]*border: 1\.5px solid rgba\(37, 99, 235, 0\.24\);[^}]*animation: gn-v2-tree-status-spin 0\.8s linear infinite;/s);
     expect(css).toMatch(/@keyframes gn-v2-tree-status-spin \{[^}]*to \{ transform: rotate\(360deg\); \}/s);
   });
 
@@ -1181,7 +1181,7 @@ describe('Sidebar locate toolbar', () => {
     expect(source).not.toContain('__v2-tree-horizontal-scroll-spacer__');
     expect(source).not.toContain('v2TreeDataWithScrollSpacer');
     expect(css).toMatch(/\.gn-v2-explorer-tree-shell \{[^}]*--gn-v2-tree-horizontal-scroll-reserve: 32px;[^}]*overflow: hidden !important;/s);
-    expect(css).toMatch(/\.gn-v2-explorer-tree-shell \.sidebar-tree-scroll-content \{[^}]*display: flex;[^}]*height: 100%;[^}]*padding: 4px 0 0;/s);
+    expect(css).toMatch(/\.gn-v2-explorer-tree-shell \.sidebar-tree-scroll-content \{[^}]*display: flex;[^}]*height: 100%;[^}]*padding: 2px 0 0;/s);
     expect(css).toMatch(/\.gn-v2-explorer-tree-shell \.ant-tree \{[^}]*flex: 1 1 auto;[^}]*width: 100%;[^}]*min-width: 0;[^}]*height: 100%;/s);
     expect(css).toMatch(/\.gn-v2-explorer-tree-shell \.ant-tree-list \{[^}]*height: calc\(100% - var\(--gn-v2-tree-horizontal-scroll-reserve\)\);[^}]*min-height: 0;[^}]*box-sizing: border-box;/s);
     expect(css).not.toMatch(/\.gn-v2-explorer-tree-shell \.ant-tree-list \{[^}]*height: 100%;/s);
@@ -1197,13 +1197,15 @@ describe('Sidebar locate toolbar', () => {
     expect(css).toMatch(/\.gn-v2-tree-title\.is-connection \{[^}]*align-items:\s*center;/s);
     expect(css).toMatch(/\.gn-v2-explorer-tree-shell \.ant-tree-title \{[^}]*flex: 1 1 auto;[^}]*overflow: visible;/s);
     expect(css).toMatch(/\.gn-v2-explorer-tree-shell \.ant-tree-title > \.gn-v2-tree-title \{[^}]*overflow: visible;/s);
-    expect(css).toMatch(/\.gn-v2-tree-status \{[^}]*width: 14px;[^}]*height: 14px;[^}]*flex: 0 0 14px;[^}]*overflow: visible;/s);
-    expect(css).toMatch(/\.gn-v2-tree-status::before \{[^}]*width: 7px;[^}]*height: 7px;[^}]*border-radius: 50%;/s);
-    expect(css).toMatch(/\.gn-v2-tree-status\.is-success::before \{[^}]*background: var\(--gn-accent\);[^}]*box-shadow: 0 0 0 4px rgba\(255, 77, 166, 0\.18\);/s);
+    expect(css).toMatch(/\.gn-v2-tree-status \{[^}]*width: 10px;[^}]*height: 10px;[^}]*flex: 0 0 10px;[^}]*overflow: visible;/s);
+    expect(css).toMatch(/\.gn-v2-tree-status::before \{[^}]*width: 5px;[^}]*height: 5px;[^}]*border-radius: 50%;/s);
+    expect(css).toMatch(/\.gn-v2-tree-status\.is-success::before \{[^}]*background: var\(--gn-accent\);[^}]*box-shadow: 0 0 0 2px rgba\(255, 77, 166, 0\.18\);/s);
     expect(css).toMatch(/\.gn-v2-tree-label \{[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;/s);
     expect(css).toMatch(/\.gn-v2-tree-title\.is-mono \{[^}]*width: max-content;[^}]*min-width: 100%;[^}]*flex: 0 0 auto;/s);
     expect(css).toMatch(/\.gn-v2-tree-title\.is-mono \.gn-v2-tree-label \{[^}]*flex: 0 0 auto;[^}]*overflow: visible;[^}]*text-overflow: clip;/s);
-    expect(css).toMatch(/\.gn-v2-tree-folder-icon \{[^}]*width: 22px;[^}]*height: 22px;[^}]*flex: 0 0 22px;/s);
+    expect(css).toMatch(/\.gn-v2-tree-folder-icon \{[^}]*width: 14px;[^}]*height: 14px;[^}]*flex: 0 0 14px;/s);
+    expect(source).toContain('itemHeight={V2_TREE_ITEM_HEIGHT}');
+    expect(utilsSource).toContain('export const V2_TREE_ITEM_HEIGHT = 20;');
     expect(css).not.toContain('.gn-v2-tree-connection-meta');
   });
 

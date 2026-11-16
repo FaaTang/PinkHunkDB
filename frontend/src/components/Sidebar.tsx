@@ -208,6 +208,7 @@ import {
   estimateV2TreeHorizontalScrollWidth,
   filterV2CommandSearchTreeItems,
   filterV2ExplorerTreeByKind,
+  V2_TREE_ITEM_HEIGHT,
   isSidebarTablePinned,
   normalizeSidebarTreeRelativeDropPosition,
   resolveSidebarConnectionIdFromKey,
@@ -3786,6 +3787,7 @@ const Sidebar: React.FC<{
                     selectedKeys={selectedKeys}
                     blockNode
                     height={effectiveTreeHeight}
+                    itemHeight={V2_TREE_ITEM_HEIGHT}
                     scrollWidth={v2TreeHorizontalScrollWidth}
                     onRightClick={onRightClick}
                 />

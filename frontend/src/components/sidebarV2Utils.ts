@@ -433,6 +433,8 @@ const V2_TREE_HORIZONTAL_SCROLL_INDENT_WIDTH = 24;
 const V2_TREE_HORIZONTAL_SCROLL_AVG_CHAR_WIDTH = 8;
 const V2_TREE_HORIZONTAL_SCROLL_VIEWPORT_BUFFER = 48;
 export const V2_TREE_HORIZONTAL_SCROLL_BOTTOM_RESERVE = 32;
+/** Compact virtual-row height for the object explorer tree (IDE-dense). */
+export const V2_TREE_ITEM_HEIGHT = 20;
 
 export const estimateV2TreeHorizontalScrollWidth = (
   nodes: SidebarTreeNode[],
