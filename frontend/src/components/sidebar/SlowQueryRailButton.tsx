@@ -5,7 +5,7 @@ import { useStore } from '../../store'
 import { useI18n } from '../../i18n/provider'
 import { buildSqlAnalysisWorkbenchTab } from '../../utils/sqlAnalysisTab'
 
-// Sidebar 底部的慢 SQL 工作台入口。
+// 慢 SQL 工作台入口。
 //
 // 设计要点：
 //   - 完全独立组件，不依赖 Sidebar.tsx 内部 state（避免改 Sidebar Props）
@@ -13,13 +13,15 @@ import { buildSqlAnalysisWorkbenchTab } from '../../utils/sqlAnalysisTab'
 //   - 点击后打开/聚焦 SQL 分析工作台，并默认切到慢 SQL 视图
 //   - 没有激活的连接时按钮禁用，hover 给提示
 //
-// 挂载位置：由调用方决定；当前用于 Sidebar 底部 footer。
+// 挂载位置：由调用方决定；当前用于左侧 Connection Rail。
 
 interface SlowQueryRailButtonProps {
   /** 自定义 className 用于外层定位 */
   className?: string
   /** 自定义 style（用于绝对定位到 Sidebar 角落） */
   style?: React.CSSProperties
+  /** rail：适配左侧图标栏；footer：旧底部条样式 */
+  appearance?: 'rail' | 'footer'
   /** tooltip 位置 */
   tooltipPlacement?:
     | 'top'
@@ -39,6 +41,7 @@ interface SlowQueryRailButtonProps {
 export default function SlowQueryRailButton({
   className,
   style,
+  appearance = 'footer',
   tooltipPlacement = 'right',
 }: SlowQueryRailButtonProps) {
   const { t } = useI18n()
@@ -64,43 +67,56 @@ export default function SlowQueryRailButton({
   const tooltipText = buttonDisabled
     ? t('sql_analysis.slow_query.rail.tooltip.no_connection')
     : t('sql_analysis.slow_query.rail.tooltip.open')
+  const ariaLabel = t('sql_analysis.slow_query.rail.aria_label')
+
+  const button = (
+    <button
+      type="button"
+      className={className}
+      onClick={() => {
+        if (buttonDisabled || !activeTab?.connectionId) {
+          return
+        }
+        addTab(buildSqlAnalysisWorkbenchTab({
+          connectionId: activeTab.connectionId,
+          dbName: activeTab.dbName,
+          view: 'slow-query',
+        }))
+      }}
+      disabled={buttonDisabled}
+      style={appearance === 'rail'
+        ? style
+        : {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 32,
+            height: 32,
+            border: 'none',
+            background: 'transparent',
+            cursor: buttonDisabled ? 'not-allowed' : 'pointer',
+            color: buttonDisabled
+              ? 'var(--gn-text-muted, #adb5bd)'
+              : 'var(--gn-text, #495057)',
+            opacity: buttonDisabled ? 0.5 : 1,
+            transition: 'opacity 0.15s, color 0.15s',
+            ...style,
+          }}
+      aria-label={ariaLabel}
+    >
+      {appearance === 'rail' ? (
+        <span className="gn-v2-rail-tool-icon" aria-hidden="true">
+          <HistoryOutlined />
+        </span>
+      ) : (
+        <HistoryOutlined style={{ fontSize: 16 }} />
+      )}
+    </button>
+  )
 
   return (
     <Tooltip title={tooltipText} placement={tooltipPlacement}>
-      <button
-        type="button"
-        className={className}
-        onClick={() => {
-          if (buttonDisabled || !activeTab?.connectionId) {
-            return
-          }
-          addTab(buildSqlAnalysisWorkbenchTab({
-            connectionId: activeTab.connectionId,
-            dbName: activeTab.dbName,
-            view: 'slow-query',
-          }))
-        }}
-        disabled={buttonDisabled}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 32,
-          height: 32,
-          border: 'none',
-          background: 'transparent',
-          cursor: buttonDisabled ? 'not-allowed' : 'pointer',
-          color: buttonDisabled
-            ? 'var(--gn-text-muted, #adb5bd)'
-            : 'var(--gn-text, #495057)',
-          opacity: buttonDisabled ? 0.5 : 1,
-          transition: 'opacity 0.15s, color 0.15s',
-          ...style,
-        }}
-        aria-label={t('sql_analysis.slow_query.rail.aria_label')}
-      >
-        <HistoryOutlined style={{ fontSize: 16 }} />
-      </button>
+      {button}
     </Tooltip>
   )
 }

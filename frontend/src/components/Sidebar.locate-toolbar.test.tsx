@@ -758,7 +758,11 @@ describe('Sidebar locate toolbar', () => {
     );
 
     expect(syncEffectSource).toContain('activeTabSidebarSyncKeyRef.current = syncKey;');
-    expect(syncEffectSource).toContain("void locateObjectInSidebarRef.current({ ...locateRequest, silent: true });");
+    expect(syncEffectSource).toContain("void locateObjectInSidebarRef.current({ ...locateRequest, silent: true })");
+    expect(syncEffectSource).toContain("activeTabSidebarSyncKeyRef.current = '';");
+    expect(syncEffectSource).toContain('if (!located && activeTabSidebarSyncKeyRef.current === syncKey)');
+    expect(syncEffectSource).toContain('activeTabSidebarLocateRetriedKeysRef');
+    expect(syncEffectSource).toContain('setActiveTabSidebarLocateRetryToken');
     expect(syncEffectSource).not.toContain('.finally(() => {');
     expect(syncEffectSource.indexOf('activeTabSidebarSyncKeyRef.current = syncKey;'))
       .toBeLessThan(syncEffectSource.indexOf('void locateObjectInSidebarRef.current'));
@@ -822,7 +826,7 @@ describe('Sidebar locate toolbar', () => {
     expect(source).toContain('SidebarConnectionRail');
   });
 
-  it('renders the v2 sidebar rail, command search hint, filter tabs and log footer', () => {
+  it('renders the v2 sidebar rail, command search hint and SQL log on the left rail', () => {
     const markup = renderSidebarMarkup({ sqlLogCount: 2341, onCreateConnection: mocks.noop });
     const source = readSidebarSource();
 
@@ -844,12 +848,9 @@ describe('Sidebar locate toolbar', () => {
     expect(source).not.toContain('<kbd>F</kbd>');
     expect(markup).toContain('gn-v2-selection-path');
     expect(markup).toContain('gn-v2-selection-crumb is-connection');
-    expect(markup).toContain('gn-v2-explorer-filter-tabs');
-    expect(markup).toContain('全部');
-    expect(markup).toContain('视图');
-    expect(markup).toContain('函数');
-    expect(markup).toContain('aria-pressed="true"');
-    expect(source).toContain("const [v2ExplorerFilter, setV2ExplorerFilter] = useState<V2ExplorerFilter>('all');");
+    expect(markup).not.toContain('gn-v2-explorer-filter-tabs');
+    expect(source).toContain("const v2ExplorerFilter: V2ExplorerFilter = 'all';");
+    expect(source).not.toContain('setV2ExplorerFilter');
     expect(source).toContain("const sidebarSearchMode = appearance.sidebarSearchMode ?? 'command';");
     expect(source).toContain('const v2CommandSearchPersistentFilterEnabled = appearance.commandSearchPersistentFilterEnabled === true;');
     expect(source).toContain('onSearchValueChange: handleV2CommandSearchValueChange,');
@@ -858,11 +859,12 @@ describe('Sidebar locate toolbar', () => {
     expect(source).toContain('gn-v2-command-filter-switch');
     expect(source).toContain("window.addEventListener('keydown', handleV2CommandSearchGlobalKeyDown, true)");
     expect(source).toContain("window.removeEventListener('keydown', handleV2CommandSearchGlobalKeyDown, true)");
-    expect(source).toContain('onClick={() => setV2ExplorerFilter(item.key)}');
     expect(source).toContain('treeData={v2VisibleTreeData}');
-    expect(markup).toContain('gn-v2-sidebar-log-footer');
+    expect(markup).not.toContain('gn-v2-sidebar-log-footer');
+    expect(markup).toContain('data-gonavi-toggle-log-panel-action="true"');
     expect(markup).toContain('SQL 执行日志');
     expect(markup).toContain('2,341');
+    expect(markup).toContain('gn-v2-rail-slow-query');
     expect(markup).not.toContain('gn-v2-rail-action-group');
     expect(source).toContain('className="gn-v2-rail-primary-actions"');
     expect(markup).toContain('data-sidebar-create-group-action="true"');
@@ -941,12 +943,8 @@ describe('Sidebar locate toolbar', () => {
     expect(markup).not.toContain('<kbd>K</kbd>');
   });
 
-  it('localizes the v2 command search scope shell and object filters through catalog keys', () => {
+  it('localizes the v2 command search scope shell through catalog keys and keeps object filter fixed to all', () => {
     const source = readSidebarSource();
-    const objectKindSource = source.slice(
-      source.indexOf('const V2_EXPLORER_FILTER_OPTIONS'),
-      source.indexOf('const V2_EXPLORER_FILTER_GROUP_KEYS'),
-    );
     const searchScopeSource = source.slice(
       source.indexOf('const SEARCH_SCOPE_OPTIONS'),
       source.indexOf('const SEARCH_SCOPE_ICON_MAP'),
@@ -955,26 +953,10 @@ describe('Sidebar locate toolbar', () => {
       source.indexOf('const currentLanguage = getCurrentLanguage();'),
       source.indexOf('const getConnectionHostSearchText = (node: TreeNode): string => {'),
     );
-    const scopeTriggerSource = source.slice(
-      source.indexOf('gn-v2-explorer-filter-tabs'),
-      source.indexOf('{/* Toolbar */}'),
-    );
-    const objectFilterRenderSource = scopeTriggerSource;
 
-    expect(objectKindSource).toContain("labelKey: 'sidebar.command_search.object_kind.all'");
-    expect(objectKindSource).toContain("labelKey: 'sidebar.command_search.object_kind.tables'");
-    expect(objectKindSource).toContain("labelKey: 'sidebar.command_search.object_kind.views'");
-    expect(objectKindSource).toContain("labelKey: 'sidebar.command_search.object_kind.sequences'");
-    expect(objectKindSource).toContain("labelKey: 'sidebar.command_search.object_kind.routines'");
-    expect(objectKindSource).toContain("labelKey: 'sidebar.command_search.object_kind.packages'");
-    expect(objectKindSource).toContain("labelKey: 'sidebar.command_search.object_kind.events'");
-    expect(objectKindSource).not.toContain("label: '全部'");
-    expect(objectKindSource).not.toContain("label: '表'");
-    expect(objectKindSource).not.toContain("label: '视图'");
-    expect(objectKindSource).not.toContain("label: '序列'");
-    expect(objectKindSource).not.toContain("label: '函数'");
-    expect(objectKindSource).not.toContain("label: '存储包'");
-    expect(objectKindSource).not.toContain("label: '事件'");
+    expect(source).toContain("const v2ExplorerFilter: V2ExplorerFilter = 'all';");
+    expect(source).not.toContain('gn-v2-explorer-filter-tabs');
+    expect(source).not.toContain('const V2_EXPLORER_FILTER_OPTIONS');
 
     expect(searchScopeSource).toContain("labelKey: 'sidebar.command_search.scope.smart'");
     expect(searchScopeSource).toContain("labelKey: 'sidebar.command_search.scope.object'");
@@ -1007,18 +989,7 @@ describe('Sidebar locate toolbar', () => {
     expect(scopePanelSource).not.toContain('支持多选组合');
     expect(scopePanelSource).not.toContain('智能与其他项互斥。若你明确知道要搜的是对象、库、Host 或标签，建议切到手动范围以减少噪音结果。');
 
-    expect(objectFilterRenderSource).toContain("aria-label={t('sidebar.command_search.object_kind.filter_aria')}");
-    expect(objectFilterRenderSource).toContain('{t(item.labelKey)}');
-    expect(objectFilterRenderSource).not.toContain('aria-label="对象筛选"');
-
     const keys = [
-      'sidebar.command_search.object_kind.all',
-      'sidebar.command_search.object_kind.tables',
-      'sidebar.command_search.object_kind.views',
-      'sidebar.command_search.object_kind.sequences',
-      'sidebar.command_search.object_kind.routines',
-      'sidebar.command_search.object_kind.packages',
-      'sidebar.command_search.object_kind.events',
       'sidebar.command_search.scope.smart',
       'sidebar.command_search.scope.object',
       'sidebar.command_search.scope.database',
@@ -1139,11 +1110,13 @@ describe('Sidebar locate toolbar', () => {
     expect(css).not.toContain('.gn-v2-active-connection-trigger:hover');
   });
 
-  it('keeps v2 explorer filter tabs on a single line when Oracle object filters are present', () => {
+  it('keeps SQL log count styling on the left rail after removing explorer filter tabs', () => {
     const css = readV2ThemeCss();
+    const source = readSidebarSource();
 
-    expect(css).toMatch(/\.gn-v2-explorer-filter-tabs \{[^}]*flex-wrap: nowrap;[^}]*overflow-x: auto;[^}]*overflow-y: hidden;/s);
-    expect(css).toMatch(/\.gn-v2-explorer-filter-tabs button \{[^}]*flex: 0 0 auto;[^}]*white-space: nowrap;/s);
+    expect(source).not.toContain('gn-v2-explorer-filter-tabs');
+    expect(css).toContain('.gn-v2-rail-tool-count-badge');
+    expect(css).toContain('.gn-v2-rail-tool-count');
   });
 
   it('shows a pending state while a connection root is loading', () => {

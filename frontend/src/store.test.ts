@@ -1306,6 +1306,42 @@ describe('store appearance persistence', () => {
     });
   });
 
+  it('does not carry closed tab tableName into the next query tab context', async () => {
+    const { useStore } = await importStore();
+
+    useStore.getState().addTab({
+      id: 'query-same-db',
+      title: '新建查询',
+      type: 'query',
+      connectionId: 'conn-1',
+      dbName: 'sys',
+      query: 'select 1;',
+    });
+    useStore.getState().addTab({
+      id: 'table-users',
+      title: 'users',
+      type: 'table',
+      connectionId: 'conn-1',
+      dbName: 'sys',
+      tableName: 'users',
+    });
+
+    expect(useStore.getState().activeTabId).toBe('table-users');
+    expect(useStore.getState().activeContext).toEqual({
+      connectionId: 'conn-1',
+      dbName: 'sys',
+      tableName: 'users',
+    });
+
+    useStore.getState().closeTab('table-users');
+
+    expect(useStore.getState().activeTabId).toBe('query-same-db');
+    expect(useStore.getState().activeContext).toEqual({
+      connectionId: 'conn-1',
+      dbName: 'sys',
+    });
+  });
+
   it('reuses the same table-export tab for the same connection and table identity', async () => {
     const { useStore } = await importStore();
 

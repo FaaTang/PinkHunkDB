@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tooltip } from 'antd';
 import {
+  BarsOutlined,
   FolderOpenOutlined,
   TableOutlined,
   DatabaseOutlined,
@@ -11,6 +12,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
+import SlowQueryRailButton from './SlowQueryRailButton';
 
 // V2 Connection Rail 子组件（从 Sidebar.tsx 抽取）。
 //
@@ -24,6 +26,7 @@ import {
 export interface SidebarConnectionRailProps {
   showLabels: boolean;
   showAIAssistant?: boolean;
+  sqlLogCount?: number;
   labels: {
     railSystemActions: string;
     railObjectActions: string;
@@ -32,6 +35,7 @@ export interface SidebarConnectionRailProps {
     batchDatabases: string;
     openExternalSqlFile: string;
     aiAssistant: string;
+    sqlExecutionLog: string;
     tools: string;
     settings: string;
     settingsTooltip?: string;
@@ -44,6 +48,7 @@ export interface SidebarConnectionRailProps {
     openBatchDatabaseExport: () => void;
     openExternalSqlFile: () => void;
     toggleAI?: () => void;
+    toggleLogPanel?: () => void;
     openTools: () => void;
     openSettings: () => void;
     toggleShowLabels: () => void;
@@ -58,6 +63,7 @@ type RailActionButtonProps = {
   showLabels: boolean;
   disabled?: boolean;
   className?: string;
+  count?: number;
   dataAttributes?: Record<string, string | boolean | undefined>;
 };
 
@@ -69,19 +75,28 @@ const RailActionButton: React.FC<RailActionButtonProps> = ({
   showLabels,
   disabled = false,
   className = 'gn-v2-rail-tool',
+  count,
   dataAttributes,
 }) => {
+  const countText = typeof count === 'number' && count > 0 ? count.toLocaleString() : '';
   const button = (
     <button
       type="button"
       className={className}
       onClick={onClick}
-      aria-label={label}
+      aria-label={countText ? `${label} (${countText})` : label}
       disabled={disabled}
       {...dataAttributes}
     >
       <span className="gn-v2-rail-tool-icon" aria-hidden="true">{icon}</span>
-      {showLabels ? <span className="gn-v2-rail-tool-label">{label}</span> : null}
+      {showLabels ? (
+        <span className="gn-v2-rail-tool-label">
+          {label}
+          {countText ? <small className="gn-v2-rail-tool-count">{countText}</small> : null}
+        </span>
+      ) : countText ? (
+        <span className="gn-v2-rail-tool-count-badge" aria-hidden="true">{countText}</span>
+      ) : null}
     </button>
   );
 
@@ -90,7 +105,7 @@ const RailActionButton: React.FC<RailActionButtonProps> = ({
   }
 
   return (
-    <Tooltip title={tooltipLabel || label} placement="right">
+    <Tooltip title={tooltipLabel || (countText ? `${label} (${countText})` : label)} placement="right">
       {button}
     </Tooltip>
   );
@@ -99,6 +114,7 @@ const RailActionButton: React.FC<RailActionButtonProps> = ({
 const SidebarConnectionRail: React.FC<SidebarConnectionRailProps> = ({
   showLabels,
   showAIAssistant = false,
+  sqlLogCount = 0,
   labels,
   handlers,
 }) => {
@@ -153,6 +169,19 @@ const SidebarConnectionRail: React.FC<SidebarConnectionRailProps> = ({
           dataAttributes={{ 'data-gonavi-ai-entry-action': true }}
         />
         ) : null}
+        <RailActionButton
+          label={labels.sqlExecutionLog}
+          icon={<BarsOutlined />}
+          onClick={handlers.toggleLogPanel ?? (() => {})}
+          showLabels={showLabels}
+          count={sqlLogCount}
+          dataAttributes={{ 'data-gonavi-toggle-log-panel-action': true }}
+        />
+        <SlowQueryRailButton
+          className="gn-v2-rail-tool gn-v2-rail-slow-query"
+          appearance="rail"
+          tooltipPlacement="right"
+        />
         <RailActionButton
           label={labels.tools}
           icon={<ToolOutlined />}

@@ -3066,9 +3066,17 @@ export const useStore = create<AppState>()(
         set((state) => {
           const newTabs = state.tabs.filter((t) => t.id !== id);
           let newActiveId = state.activeTabId;
+          let fallbackContext = state.activeContext;
           if (state.activeTabId === id) {
             newActiveId =
               newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null;
+            // 关闭当前标签时，不要把旧表名带到下一个查询标签的上下文/侧栏路径上
+            if (fallbackContext?.tableName) {
+              fallbackContext = {
+                connectionId: fallbackContext.connectionId,
+                dbName: fallbackContext.dbName,
+              };
+            }
           }
           return {
             tabs: newTabs,
@@ -3076,7 +3084,7 @@ export const useStore = create<AppState>()(
             activeContext: resolveActiveContextForTabId(
               newTabs,
               newActiveId,
-              state.activeContext,
+              fallbackContext,
             ),
           };
         }),

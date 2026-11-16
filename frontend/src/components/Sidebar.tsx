@@ -1,6 +1,5 @@
 ﻿import SidebarConnectionRail from './sidebar/SidebarConnectionRail';
 import SidebarSearchPanel, { type SidebarSearchPanelProps } from './sidebar/SidebarSearchPanel';
-import SlowQueryRailButton from './sidebar/SlowQueryRailButton';
 import {
   getMetadataDialect,
   shouldHideSchemaPrefix,
@@ -138,7 +137,6 @@ import Modal from './common/ResizableDraggableModal';
   MoreOutlined,
   ToolOutlined,
   SettingOutlined,
-  BarsOutlined,
   NodeExpandOutlined,
   NodeCollapseOutlined,
   AimOutlined,
@@ -287,16 +285,6 @@ const buildConnectionRootRedisCommandTabTitle = (redisDbLabel = 'db0') =>
 
 const buildConnectionRootRedisMonitorTabTitle = (redisDbLabel = 'db0') =>
   t('sidebar.tab.redis_monitor', { database: redisDbLabel });
-
-const V2_EXPLORER_FILTER_OPTIONS: Array<{ key: V2ExplorerFilter; labelKey: string }> = [
-  { key: 'all', labelKey: 'sidebar.command_search.object_kind.all' },
-  { key: 'tables', labelKey: 'sidebar.command_search.object_kind.tables' },
-  { key: 'views', labelKey: 'sidebar.command_search.object_kind.views' },
-  { key: 'sequences', labelKey: 'sidebar.command_search.object_kind.sequences' },
-  { key: 'routines', labelKey: 'sidebar.command_search.object_kind.routines' },
-  { key: 'packages', labelKey: 'sidebar.command_search.object_kind.packages' },
-  { key: 'events', labelKey: 'sidebar.command_search.object_kind.events' },
-];
 
 const buildConnectionReloadSignature = (conn?: SavedConnection | null): string => {
   if (!conn) return '';
@@ -568,7 +556,8 @@ const Sidebar: React.FC<{
   const [searchValue, setSearchValue] = useState(v2PersistedSidebarFilter);
   const deferredSearchValue = useDeferredValue(searchValue);
   const [searchScopes, setSearchScopes] = useState<SearchScope[]>(['smart']);
-  const [v2ExplorerFilter, setV2ExplorerFilter] = useState<V2ExplorerFilter>('all');
+  // 资源树固定展示全部对象类型，不再提供 All/Tables 等筛选 Tab
+  const v2ExplorerFilter: V2ExplorerFilter = 'all';
   const [isSearchScopePopoverOpen, setIsSearchScopePopoverOpen] = useState(false);
   const searchInputRef = useRef<any>(null);
   const commandSearchInputRef = useRef<any>(null);
@@ -1368,7 +1357,7 @@ const Sidebar: React.FC<{
     return null;
   };
 
-  const locateObjectInSidebarRef = useRef<(detail: unknown) => Promise<void>>(async () => {});
+  const locateObjectInSidebarRef = useRef<(detail: unknown) => Promise<boolean>>(async () => false);
 
   const waitForSidebarLoadKey = async (loadKey: string): Promise<boolean> => {
       for (let attempt = 0; attempt < SIDEBAR_LOCATE_LOAD_WAIT_ATTEMPTS && loadingNodesRef.current.has(loadKey); attempt += 1) {
@@ -1377,7 +1366,7 @@ const Sidebar: React.FC<{
       return !loadingNodesRef.current.has(loadKey);
   };
 
-  const locateObjectInSidebar = async (detail: unknown) => {
+  const locateObjectInSidebar = async (detail: unknown): Promise<boolean> => {
       const silent = typeof detail === 'object'
           && detail !== null
           && 'silent' in detail
@@ -1395,7 +1384,7 @@ const Sidebar: React.FC<{
       const request = normalizeSidebarLocateObjectRequest(detail);
       if (!request) {
           notifyWarning(t('sidebar.message.locate_current_table_unavailable'));
-          return;
+          return false;
       }
 
       if (request.objectGroup === 'externalSqlFiles') {
@@ -1404,7 +1393,7 @@ const Sidebar: React.FC<{
           const path = findSidebarNodePathForLocate(treeDataRef.current as SidebarLocateTreeNodeLike[], target);
           if (!path) {
               notifyWarning(t('sidebar.message.locate_external_sql_file_not_found', { path: request.filePath }));
-              return;
+              return false;
           }
           const targetKey = path[path.length - 1];
           const targetNode = findTreeNodeByKey(treeDataRef.current, targetKey);
@@ -1419,14 +1408,14 @@ const Sidebar: React.FC<{
               setActiveContext({ connectionId, dbName });
           }
           scrollSidebarTreeToKey(targetKey);
-          return;
+          return true;
       }
 
       if (request.objectGroup === 'database') {
           const conn = connections.find(item => item.id === request.connectionId);
           if (!conn) {
               notifyWarning(t('sidebar.message.locate_connection_not_found_for_object'));
-              return;
+              return false;
           }
 
           const target = resolveSidebarLocateTarget(request, { groupBySchema: false });
@@ -1436,13 +1425,13 @@ const Sidebar: React.FC<{
               const connectionNode = findTreeNodeByKey(treeDataRef.current, target.connectionKey);
               if (!connectionNode) {
                   notifyWarning(t('sidebar.message.locate_connection_not_in_tree'));
-                  return;
+                  return false;
               }
               if (loadingNodesRef.current.has(dbLoadKey)) {
                   const loaded = await waitForSidebarLoadKey(dbLoadKey);
                   if (!loaded) {
                       notifyInfo(t('sidebar.message.locate_database_loading', { database: request.dbName }));
-                      return;
+                      return false;
                   }
               } else {
                   await loadDatabases(connectionNode);
@@ -1452,7 +1441,7 @@ const Sidebar: React.FC<{
           path = findSidebarNodePathByKey(treeDataRef.current as SidebarLocateTreeNodeLike[], target.databaseKey);
           if (!path) {
               notifyWarning(t('sidebar.message.locate_database_not_found', { database: request.dbName }));
-              return;
+              return false;
           }
 
           const targetKey = path[path.length - 1];
@@ -1464,13 +1453,13 @@ const Sidebar: React.FC<{
           selectedNodesRef.current = targetNode ? [targetNode] : [];
           setActiveContext({ connectionId: request.connectionId, dbName: request.dbName });
           scrollSidebarTreeToKey(targetKey);
-          return;
+          return true;
       }
 
       const conn = connections.find(item => item.id === request.connectionId);
       if (!conn) {
           notifyWarning(t('sidebar.message.locate_connection_not_found_for_object'));
-          return;
+          return false;
       }
 
       const target = resolveSidebarLocateTarget(request, {
@@ -1494,13 +1483,13 @@ const Sidebar: React.FC<{
           const connectionNode = findTreeNodeByKey(treeDataRef.current, target.connectionKey);
           if (!connectionNode) {
               notifyWarning(t('sidebar.message.locate_connection_not_in_tree'));
-              return;
+              return false;
           }
           if (loadingNodesRef.current.has(dbLoadKey)) {
               const loaded = await waitForSidebarLoadKey(dbLoadKey);
               if (!loaded) {
                   notifyInfo(t('sidebar.message.locate_database_loading', { database: request.dbName }));
-                  return;
+                  return false;
               }
           } else {
               await loadDatabases(connectionNode);
@@ -1510,7 +1499,7 @@ const Sidebar: React.FC<{
       const dbNode = findTreeNodeByKey(treeDataRef.current, target.databaseKey);
       if (!dbNode) {
           notifyWarning(t('sidebar.message.locate_database_not_found', { database: request.dbName }));
-          return;
+          return false;
       }
 
       path = findSidebarNodePathForLocate(treeDataRef.current as SidebarLocateTreeNodeLike[], target);
@@ -1522,7 +1511,7 @@ const Sidebar: React.FC<{
                       object: objectLabel,
                       database: request.dbName,
                   }));
-                  return;
+                  return false;
               }
           } else {
               await loadTables(dbNode);
@@ -1535,7 +1524,7 @@ const Sidebar: React.FC<{
               object: objectLabel,
               name: request.tableName,
           }));
-          return;
+          return false;
       }
 
       const targetKey = path[path.length - 1];
@@ -1551,6 +1540,7 @@ const Sidebar: React.FC<{
           ...(String(request.tableName || '').trim() ? { tableName: String(request.tableName).trim() } : {}),
       });
       scrollSidebarTreeToKey(targetKey);
+      return true;
   };
 
   useEffect(() => {
@@ -2446,6 +2436,8 @@ const Sidebar: React.FC<{
   };
 
   const activeTabSidebarSyncKeyRef = useRef('');
+  const activeTabSidebarLocateRetriedKeysRef = useRef<Set<string>>(new Set());
+  const [activeTabSidebarLocateRetryToken, setActiveTabSidebarLocateRetryToken] = useState(0);
   useEffect(() => {
       if (!activeTab || connections.length === 0) {
           return;
@@ -2485,12 +2477,22 @@ const Sidebar: React.FC<{
           dbType: conn.config?.type,
       });
       if (locateRequest) {
-          void locateObjectInSidebarRef.current({ ...locateRequest, silent: true });
+          void (async () => {
+              const located = await locateObjectInSidebarRef.current({ ...locateRequest, silent: true });
+              // 静默定位失败时放开 syncKey；若定位中 treeData 已变却被 syncKey 挡住，再补一次重试
+              if (!located && activeTabSidebarSyncKeyRef.current === syncKey) {
+                  activeTabSidebarSyncKeyRef.current = '';
+                  if (!activeTabSidebarLocateRetriedKeysRef.current.has(syncKey)) {
+                      activeTabSidebarLocateRetriedKeysRef.current.add(syncKey);
+                      setActiveTabSidebarLocateRetryToken((token) => token + 1);
+                  }
+              }
+          })();
           return;
       }
 
       selectConnectionFromRail(conn);
-  }, [activeTab, activeTabId, connections, selectConnectionFromRail, treeData]);
+  }, [activeTab, activeTabId, activeTabSidebarLocateRetryToken, connections, selectConnectionFromRail, treeData]);
 
   const titleRender = useSidebarTitleRender({
       connectionStates,
@@ -2989,9 +2991,6 @@ const Sidebar: React.FC<{
           message.warning(t('sidebar.message.locate_current_table_unavailable'));
           return;
       }
-      if (row.locateKind === 'connection' && v2ExplorerFilter !== 'all') {
-          setV2ExplorerFilter('all');
-      }
       const path = findSidebarNodePathByKey(treeDataRef.current as SidebarLocateTreeNodeLike[], targetKey);
       if (!path) {
           message.warning(t('sidebar.message.locate_connection_not_in_tree'));
@@ -3008,7 +3007,7 @@ const Sidebar: React.FC<{
           setActiveContext({ connectionId: targetKey, dbName: '' });
       }
       scrollSidebarTreeToKey(targetKey);
-  }, [v2ExplorerFilter]);
+  }, []);
 
   useEffect(() => {
       visibleTreeDataRef.current = v2VisibleTreeData;
@@ -3512,6 +3511,7 @@ const Sidebar: React.FC<{
   // V2 Connection Rail 子组件 props（从原 renderV2ConnectionRail 抽出，保留所有原行为）
   const v2ConnectionRailProps = {
     showLabels: sidebarRailShowLabels,
+    sqlLogCount,
     labels: {
       railSystemActions: v2RailSystemActionsLabel,
       railObjectActions: v2RailObjectActionsLabel,
@@ -3520,6 +3520,7 @@ const Sidebar: React.FC<{
       batchDatabases: v2BatchDatabasesLabel,
       openExternalSqlFile: v2OpenExternalSqlFileLabel,
       aiAssistant: v2AiAssistantLabel,
+      sqlExecutionLog: t('app.sidebar.sql_execution_log'),
       tools: v2ToolsLabel,
       settings: v2SettingsLabel,
       settingsTooltip: v2SettingsTooltipLabel,
@@ -3532,6 +3533,7 @@ const Sidebar: React.FC<{
       openBatchDatabaseExport: () => openBatchDatabaseExportWorkbench(),
       openExternalSqlFile: handleOpenSQLFileFromToolbar,
       toggleAI: aiAssistantEnabled ? (onToggleAI ?? (() => {})) : undefined,
+      toggleLogPanel: onToggleLogPanel,
       openTools: onOpenTools ?? (() => {}),
       openSettings: onOpenSettings ?? (() => {}),
       toggleShowLabels: () => setAppearance({ sidebarRailShowLabels: !sidebarRailShowLabels }),
@@ -3719,19 +3721,6 @@ const Sidebar: React.FC<{
                     </div>
                 </div>
             </div>
-            <div className="gn-v2-explorer-filter-tabs" aria-label={t('sidebar.command_search.object_kind.filter_aria')}>
-                {V2_EXPLORER_FILTER_OPTIONS.map((item) => (
-                    <button
-                        key={item.key}
-                        type="button"
-                        className={v2ExplorerFilter === item.key ? 'is-active' : undefined}
-                        aria-pressed={v2ExplorerFilter === item.key}
-                        onClick={() => setV2ExplorerFilter(item.key)}
-                    >
-                        {t(item.labelKey)}
-                    </button>
-                ))}
-            </div>
             <div className="gn-v2-selection-path-row">
                 <div
                     className="gn-v2-selection-path is-tree"
@@ -3791,19 +3780,6 @@ const Sidebar: React.FC<{
                 </div>
             </div>
         </div>
-        {/* Toolbar */}
-
-        <div className="gn-v2-sidebar-log-footer">
-                <button type="button" className="gn-v2-sidebar-log-button" onClick={onToggleLogPanel}>
-                    <BarsOutlined />
-                    <span>{t('app.sidebar.sql_execution_log')}</span>
-                    <small>{sqlLogCount.toLocaleString()}</small>
-                </button>
-                <SlowQueryRailButton
-                    className="gn-v2-sidebar-slow-query-button"
-                    tooltipPlacement="top"
-                />
-            </div>
         </div>
         <SidebarSearchPanel {...v2CommandSearchPanelProps} />
 
