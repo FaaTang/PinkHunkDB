@@ -126,7 +126,7 @@ const TriggerViewer: React.FC<TriggerViewerProps> = ({ tab }) => {
         tab.schemaName,
     ].map((item) => String(item || '')).join('||');
 
-    // 透明 Monaco Editor 主题�?MonacoEditor 包装组件按需注册（含 stickyScroll 不透明背景�?
+    // 透明 Monaco Editor 主题由 MonacoEditor 包装组件按需注册（含 stickyScroll 不透明背景）
 
     const escapeSQLLiteral = (raw: string): string => String(raw || '').replace(/'/g, "''");
     const parseSchemaAndName = (fullName: string): { schema: string; name: string } => {

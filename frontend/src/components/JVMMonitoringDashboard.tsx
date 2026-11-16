@@ -66,6 +66,7 @@ const resolveBackendApp = () =>
 
 const JVMMonitoringDashboard: React.FC<JVMMonitoringDashboardProps> = ({ tab }) => {
   const { t, language } = useI18n();
+  const theme = useStore((state) => state.theme);
   const connection = useStore((state) =>
     state.connections.find((item) => item.id === tab.connectionId),
   );

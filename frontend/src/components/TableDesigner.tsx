@@ -95,10 +95,10 @@ const COMMON_TYPES = [
     { value: 'json' },
 ];
 
-// 按数据库方言分组的完整字段类型列�?
+// 按数据库方言分组的完整字段类型列表
 const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
     mysql: [
-        // 数�?
+        // 数值
         { value: 'tinyint' },
         { value: 'tinyint(1)' },
         { value: 'smallint' },
@@ -108,14 +108,14 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'float' },
         { value: 'double' },
         { value: 'decimal(10,2)' },
-        // 字符�?
+        // 字符串
         { value: 'char(50)' },
         { value: 'varchar(255)' },
         { value: 'tinytext' },
         { value: 'text' },
         { value: 'mediumtext' },
         { value: 'longtext' },
-        // 二进�?
+        // 二进制
         { value: 'binary(255)' },
         { value: 'varbinary(255)' },
         { value: 'tinyblob' },
@@ -135,7 +135,7 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'bit(1)' },
     ],
     postgres: [
-        // 数�?
+        // 数值
         { value: 'smallint' },
         { value: 'integer' },
         { value: 'bigint' },
@@ -144,7 +144,7 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'numeric(10,2)' },
         { value: 'serial' },
         { value: 'bigserial' },
-        // 字符�?
+        // 字符串
         { value: 'char(50)' },
         { value: 'varchar(255)' },
         { value: 'text' },
@@ -156,7 +156,7 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'timestamp' },
         { value: 'timestamptz' },
         { value: 'interval' },
-        // 二进�?
+        // 二进制
         { value: 'bytea' },
         // JSON
         { value: 'json' },
@@ -172,7 +172,7 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'tsvector' },
     ],
     sqlserver: [
-        // 数�?
+        // 数值
         { value: 'tinyint' },
         { value: 'smallint' },
         { value: 'int' },
@@ -183,7 +183,7 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'numeric(10,2)' },
         { value: 'money' },
         { value: 'smallmoney' },
-        // 字符�?
+        // 字符串
         { value: 'char(50)' },
         { value: 'varchar(255)' },
         { value: 'varchar(max)' },
@@ -199,7 +199,7 @@ const DB_TYPE_OPTIONS: Record<string, { value: string }[]> = {
         { value: 'datetime2' },
         { value: 'datetimeoffset' },
         { value: 'smalldatetime' },
-        // 二进�?
+        // 二进制
         { value: 'binary(255)' },
         { value: 'varbinary(255)' },
         { value: 'varbinary(max)' },
@@ -520,23 +520,23 @@ const TableDesigner: React.FC<{ tab: TabData; embedded?: boolean }> = ({ tab, em
       setCommentEditorValue('');
   }, []);
 
-  // 透明 Monaco Editor 主题�?MonacoEditor 包装组件按需注册（含 stickyScroll 不透明背景�?
+  // 透明 Monaco Editor 主题由 MonacoEditor 包装组件按需注册（含 stickyScroll 不透明背景）
 
-  // 监听字段 Tab 容器高度，为所�?Tab 内表格计�?scroll.y
-  // �?Tab 切换时，字段 Tab �?display:none 导致 height=0，跳过该次更新保持有效�?
+  // 监听字段 Tab 容器高度，为所有 Tab 内表格计算 scroll.y
+  // 当 Tab 切换时，字段 Tab 被 display:none 导致 height=0，跳过该次更新保持有效值
   useEffect(() => {
       if (!containerRef.current) return;
       const resizeObserver = new ResizeObserver(entries => {
           for (let entry of entries) {
               const h = entry.contentRect.height;
-              // 跳过零高度观测（Tab 面板被隐藏时�?
+              // 跳过零高度观测（Tab 面板被隐藏时）
               if (h <= 0) return;
               setTableHeight(Math.max(200, h - 40));
           }
       });
       resizeObserver.observe(containerRef.current);
       return () => resizeObserver.disconnect();
-  }, []); // 不依�?activeKey，仅挂载一次，通过零高度守卫避�?Tab 切换异常
+  }, []); // 不依赖 activeKey，仅挂载一次，通过零高度守卫避免 Tab 切换异常
 
   // --- Resizable Columns State ---
   const [tableColumns, setTableColumns] = useState<any[]>([]);
@@ -1182,7 +1182,7 @@ ${selectedTrigger.statement}`;
     setTriggerExecuting(true);
 
     try {
-      // 如果是编辑模式，先删除旧触发�?
+      // 如果是编辑模式，先删除旧触发器
       if (triggerEditMode === 'edit' && selectedTrigger) {
         const dropSql = buildDropTriggerSql(selectedTrigger.name);
         const dropRes = await DBQuery(buildRpcConnectionConfig(config) as any, tab.dbName || '', dropSql);
@@ -1624,7 +1624,7 @@ ${selectedTrigger.statement}`;
       const dbType = getDbType();
       const k = kind || 'NORMAL';
       if (isMysqlLikeDialect(dbType)) {
-          // MySQL InnoDB: 所有索引均为固定方法类�?
+          // MySQL InnoDB: 所有索引均为固定方法类型
           if (k === 'FULLTEXT') return [{ label: 'FULLTEXT', value: 'FULLTEXT' }];
           if (k === 'SPATIAL') return [{ label: 'RTREE', value: 'RTREE' }];
           return [{ label: 'BTREE', value: 'BTREE' }];
@@ -1643,7 +1643,7 @@ ${selectedTrigger.statement}`;
       return [{ label: t('table_designer.option.default', undefined, i18nLanguage), value: 'DEFAULT' }];
   };
 
-  /** 根据索引类别返回固定的索引方法类型，可选类别返�?undefined */
+  /** 根据索引类别返回固定的索引方法类型，可选类别返回 undefined */
   const getFixedIndexType = (kind: IndexKind): string | undefined => {
       const dbType = getDbType();
       if (isMysqlLikeDialect(dbType)) {
@@ -2067,7 +2067,7 @@ END;`;
           message.warning(t('table_designer.message.index_maintenance_unsupported', undefined, i18nLanguage));
           return;
       }
-      // 根据选中�?key 找到对应的索引对�?
+      // 根据选中的 key 找到对应的索引对象
       const toDelete = groupedIndexes.filter(idx => selectedIndexKeys.includes(idx.key));
       if (toDelete.length === 0) {
           message.warning(t('table_designer.message.select_index_to_delete', undefined, i18nLanguage));
@@ -2364,7 +2364,7 @@ END;`;
     }),
   })), [tableColumns]);
 
-  // 字段�?Checkbox 选择列（不参�?resize，支持全选）
+  // 字段表 Checkbox 选择列（不参与 resize，支持全选）
   const allColumnKeys = useMemo(() => columns.map(c => c._key), [columns]);
   const isAllColumnsSelected = allColumnKeys.length > 0 && selectedColumnRowKeys.length === allColumnKeys.length;
   const isColumnsIndeterminate = selectedColumnRowKeys.length > 0 && selectedColumnRowKeys.length < allColumnKeys.length;
@@ -2404,7 +2404,7 @@ END;`;
       ),
   }), [selectedColumnRowKeys, allColumnKeys, isAllColumnsSelected, isColumnsIndeterminate]);
 
-  // sort 拖拽列（不参�?resize�?
+  // sort 拖拽列（不参与 resize）
   const sortColumn = useMemo(() => ({
       key: 'sort',
       width: 40,
@@ -2475,7 +2475,7 @@ END;`;
       ]);
   }, [i18nLanguage]);
 
-  // Checkbox 选择列（不参�?resize，支持全选）
+  // Checkbox 选择列（不参与 resize，支持全选）
   const allIndexKeys = groupedIndexes.map(idx => idx.key);
   const isAllSelected = allIndexKeys.length > 0 && selectedIndexKeys.length === allIndexKeys.length;
   const isIndeterminate = selectedIndexKeys.length > 0 && selectedIndexKeys.length < allIndexKeys.length;
@@ -3311,7 +3311,7 @@ END;`;
                                         selectedRowKeys: selectedTrigger ? [selectedTrigger.name] : [],
                                         onChange: (_, selectedRows) => setSelectedTrigger(selectedRows[0] || null),
                                         onSelect: (record, selected) => {
-                                            // 点击单选按钮时，如果已选中则取�?
+                                            // 点击单选按钮时，如果已选中则取消
                                             if (selectedTrigger?.name === record.name) {
                                                 setSelectedTrigger(null);
                                             } else {

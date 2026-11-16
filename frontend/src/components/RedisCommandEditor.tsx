@@ -48,7 +48,7 @@ export const clampRedisCommandEditorHeight = (
     return Math.min(Math.max(requestedHeight, minHeight), maxHeight);
 };
 
-// 智能解析 Redis 脚本块，保护多行引号内的换行�?
+// 智能解析 Redis 脚本块，保护多行引号内的换行符
 function parseRedisScriptBlocks(script: string): string[] {
     const blocks: string[] = [];
     let currentBlock = "";
@@ -222,7 +222,7 @@ const RedisCommandEditor: React.FC<RedisCommandEditorProps> = ({ connectionId, r
 
         let cmdToExecute = '';
         
-        // 1. 获取用户是否有高亮选中的文�?
+        // 1. 获取用户是否有高亮选中的文本
         const selection = editorRef.current?.getSelection();
         if (selection && !selection.isEmpty()) {
             cmdToExecute = editorRef.current?.getModel()?.getValueInRange(selection) || '';
@@ -286,7 +286,7 @@ const RedisCommandEditor: React.FC<RedisCommandEditorProps> = ({ connectionId, r
             return <span style={{ color: '#569cd6' }}>(nil)</span>;
         }
         if (typeof result === 'string') {
-            // 尝试美化 JSON 字符�?
+            // 尝试美化 JSON 字符串
             try {
                 const parsed = JSON.parse(result);
                 if (typeof parsed === 'object' && parsed !== null) {
@@ -339,7 +339,7 @@ const RedisCommandEditor: React.FC<RedisCommandEditorProps> = ({ connectionId, r
         const delta = e.clientY - dragRef.current.startY;
         let newHeight = dragRef.current.startHeight + delta;
         
-        // 限制输入区高度，避免拖拽后压缩掉底部输出区�?
+        // 限制输入区高度，避免拖拽后压缩掉底部输出区。
         newHeight = clampRedisCommandEditorHeight(
             newHeight,
             containerRef.current?.clientHeight,
@@ -493,7 +493,7 @@ const RedisCommandEditor: React.FC<RedisCommandEditorProps> = ({ connectionId, r
                         results.map((item, index) => (
                             <div key={item.timestamp + index} style={{ marginBottom: 16 }}>
                                 <div style={{ color: '#569cd6', marginBottom: 6, fontWeight: 'bold' }}>
-                                    <span style={{ color: '#4CAF50', marginRight: 8 }}>�?/span>
+                                    <span style={{ color: '#4CAF50', marginRight: 8 }}>➜</span>
                                     {item.command}
                                     <span style={{ color: workbenchTheme.textMuted, fontSize: 11, marginLeft: 12, fontWeight: 'normal' }}>[{item.durationMs}ms]</span>
                                 </div>

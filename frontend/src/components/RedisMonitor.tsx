@@ -193,8 +193,8 @@ const RedisMonitor: React.FC<RedisMonitorProps> = ({ connectionId, redisDB }) =>
           </Title>
           <Text type="secondary">
             {connection.name} 
-            {currentInfo.redis_version && ` â€? Redis ${currentInfo.redis_version}`}
-            {currentInfo.os && ` â€? ${currentInfo.os}`}
+            {currentInfo.redis_version && ` â€¢  Redis ${currentInfo.redis_version}`}
+            {currentInfo.os && ` â€¢  ${currentInfo.os}`}
           </Text>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>

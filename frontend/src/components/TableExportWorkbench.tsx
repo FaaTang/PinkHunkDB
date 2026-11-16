@@ -276,6 +276,7 @@ export const buildTableExportHistoryEntry = ({
 
 const TableExportWorkbench: React.FC<{ tab: TabData }> = ({ tab }) => {
   const connections = useStore((state) => state.connections);
+  const theme = useStore((state) => state.theme);
   const upsertTableExportHistory = useStore((state) => state.upsertTableExportHistory);
   const workbenchMode = resolveWorkbenchMode(tab);
   const isSingleWorkbench = workbenchMode === 'single';

@@ -374,6 +374,7 @@ const ConnectionModal: React.FC<{
   const testTimerRef = useRef<number | null>(null);
   const addConnection = useStore((state) => state.addConnection);
   const updateConnection = useStore((state) => state.updateConnection);
+  const theme = useStore((state) => state.theme);
   const appearance = useStore((state) => state.appearance);
   const memorySettings = useStore((state) => state.memorySettings);
   const languagePreference = useStore((state) => state.languagePreference);
@@ -1579,7 +1580,7 @@ const ConnectionModal: React.FC<{
         } else {
           setActiveNetworkConfig("ssl");
         }
-        // 如果�?Redis 编辑模式，设置已保存�?Redis 数据库列�?
+        // 如果是 Redis 编辑模式，设置已保存的 Redis 数据库列表
         if (configType === "redis") {
           setRedisDbList(
             buildRedisDatabaseList(
@@ -2348,7 +2349,7 @@ const ConnectionModal: React.FC<{
             </div>
           ))}
         </div>
-        {/* 右侧数据源卡�?*/}
+        {/* 右侧数据源卡片 */}
         <div
           style={{
             flex: 1,

@@ -257,7 +257,7 @@ const FindInDatabaseModal: React.FC<FindInDatabaseModalProps> = ({ open, onClose
             align: 'center' as const,
             render: (count: number) => (
                 <Tag color={count >= MAX_MATCH_ROWS_PER_TABLE ? 'orange' : 'green'}>
-                    {count >= MAX_MATCH_ROWS_PER_TABLE ? `â‰?{count}` : count}
+                    {count >= MAX_MATCH_ROWS_PER_TABLE ? `â‰¥${count}` : count}
                 </Tag>
             ),
         },

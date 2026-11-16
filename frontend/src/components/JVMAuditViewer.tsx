@@ -82,6 +82,7 @@ const JVMAuditViewer: React.FC<JVMAuditViewerProps> = ({ tab }) => {
   const connection = useStore((state) =>
     state.connections.find((item) => item.id === tab.connectionId),
   );
+  const theme = useStore((state) => state.theme);
   const darkMode = useResolvedDarkMode();
   const [limit, setLimit] = useState(50);
   const [loading, setLoading] = useState(true);

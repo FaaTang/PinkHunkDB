@@ -168,7 +168,7 @@ const formatDriverLogVersionTip = (version: string) => (
   version ? t('driver.modal.operationLog.versionTip', { version }) : ''
 );
 const DRIVER_ERROR_DETAIL_SENTINEL = '__GONAVI_DRIVER_ERROR_DETAIL__';
-const DRIVER_ERROR_DETAIL_SEPARATORS = [': ', 'ï¼?, 'ï¼?', ':'];
+const DRIVER_ERROR_DETAIL_SEPARATORS = [': ', 'ï¼š', 'ï¼š ', ':'];
 const interpolateDriverMessageTemplate = (
   template: string,
   params?: Record<string, unknown>,
@@ -311,7 +311,7 @@ const stripWrappedDriverErrorDetail = (
 const formatDriverErrorMessageWithDetail = (
   fallbackMessage: string,
   detail: string,
-): string => `${fallbackMessage}${/[\u3400-\u9fff]/.test(fallbackMessage) ? 'ï¼? : ': '}${detail}`;
+): string => `${fallbackMessage}${/[\u3400-\u9fff]/.test(fallbackMessage) ? 'ï¼š' : ': '}${detail}`;
 export const resolveDriverErrorMessageText = (
   rawMessage: unknown,
   fallbackMessage: string,
