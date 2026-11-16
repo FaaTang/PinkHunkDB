@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import type React from 'react';
 import { message } from 'antd';
 import type { Item } from './DataGridCore';
@@ -54,47 +54,32 @@ type DataGridBatchActionsContext = Record<string, any> & {
 
 export const useDataGridBatchActions = (ctx: DataGridBatchActionsContext) => {
   const {
-    CELL_SELECTION_DRAG_THRESHOLD_PX,
     GONAVI_ROW_KEY,
     addedRows,
     batchEditSetNull,
     batchEditValue,
-    canModifyData,
     cancelAnimationFrame,
-    cellEditModeRef,
     cellSelectionAutoScrollRafRef,
     cellSelectionPointerRef,
-    cellSelectionRafRef,
-    cellSelectionScrollRafRef,
     closeBatchEditModal,
-    columnIndexMap,
-    containerRef,
     copiedCellPatch,
     currentSelectionRef,
-    displayColumnNames,
     displayDataRef,
     effectiveEditLocator,
     isCellValueEqualForDiff,
     isDraggingRef,
-    isTableSurfaceActive,
     isWritableResultColumn,
-    makeCellKey,
     modifiedRows,
-    pendingCellSelectionStartRef,
-    requestAnimationFrame,
-    rowIndexMapRef,
     rowKeyStr,
     selectedCells,
     selectedRowKeysRef,
     selectionStartRef,
     setAddedRows,
     setCellContextMenu,
-    setCellEditMode,
     setCopiedCellPatch,
     setModifiedRows,
     setSelectedCells,
     splitCellKey,
-    suppressCellSelectionClickRef,
     translateDataGrid,
     updateCellSelection,
   } = ctx;
@@ -198,299 +183,6 @@ const handleBatchFillCells = useCallback(() => {
     }
     updateCellSelection(new Set());
   }, [batchEditValue, batchEditSetNull, addedRows, modifiedRows, rowKeyStr, updateCellSelection, closeBatchEditModal, translateDataGrid]);
-
-  // 单元格编辑器（多选拖选 / 批量填充）已下线，保留函数体避免大范围拆依赖。
-  useEffect(() => {
-    return;
-    const container = containerRef.current;
-    if (!canModifyData || !isTableSurfaceActive) return;
-    if (!container) return;
-    const EDGE_THRESHOLD_PX = 28;
-    const MIN_SCROLL_STEP = 8;
-    const MAX_SCROLL_STEP = 24;
-
-    const isInteractiveTarget = (target: HTMLElement | null): boolean => {
-      if (!target) return false;
-      return !!target.closest('input, textarea, button, select, [contenteditable="true"], .ant-checkbox, .ant-picker, .ant-select, .ant-dropdown, .ant-modal');
-    };
-
-    const getCellElement = (target: HTMLElement | null): HTMLElement | null => {
-      if (!target) return null;
-      const cell = target.closest('[data-row-key][data-col-name]') as HTMLElement;
-      if (!cell || !container.contains(cell)) return null;
-      const colName = cell.getAttribute('data-col-name');
-      if (!colName || !isWritableResultColumn(colName, effectiveEditLocator)) return null;
-      return cell;
-    };
-
-    const getCellInfo = (target: HTMLElement | null): { rowKey: string; colName: string } | null => {
-      const cell = getCellElement(target);
-      if (!cell) return null;
-      const rowKey = cell.getAttribute('data-row-key');
-      const colName = cell.getAttribute('data-col-name');
-      if (!rowKey || !colName) return null;
-      return { rowKey, colName };
-    };
-
-    const getCellInfoFromPoint = (x: number, y: number): { rowKey: string; colName: string } | null => {
-      const target = document.elementFromPoint(x, y) as HTMLElement | null;
-      return getCellInfo(target);
-    };
-
-    const applySelectionUpdate = (cellInfo: { rowKey: string; colName: string }) => {
-      const start = selectionStartRef.current;
-      if (!start) return;
-
-      const currentData = displayDataRef.current;
-      const rowIndexMap = rowIndexMapRef.current;
-      const startRowIndex = start.rowIndex;
-      const endRowIndex = rowIndexMap.get(cellInfo.rowKey) ?? -1;
-      if (startRowIndex === -1 || endRowIndex === -1) return;
-
-      const startColIndex = start.colIndex;
-      const endColIndex = columnIndexMap.get(cellInfo.colName) ?? -1;
-      if (startColIndex === -1 || endColIndex === -1) return;
-
-      const minRowIndex = Math.min(startRowIndex, endRowIndex);
-      const maxRowIndex = Math.max(startRowIndex, endRowIndex);
-      const minColIndex = Math.min(startColIndex, endColIndex);
-      const maxColIndex = Math.max(startColIndex, endColIndex);
-
-      const newSelectedCells = new Set<string>();
-      for (let i = minRowIndex; i <= maxRowIndex; i++) {
-        const row = currentData[i];
-        const rKey = String(row?.[GONAVI_ROW_KEY]);
-        for (let j = minColIndex; j <= maxColIndex; j++) {
-          newSelectedCells.add(makeCellKey(rKey, displayColumnNames[j]));
-        }
-      }
-
-      currentSelectionRef.current = newSelectedCells;
-      updateCellSelection(newSelectedCells);
-    };
-
-    const scheduleSelectionUpdate = (cellInfo: { rowKey: string; colName: string }) => {
-      if (cellSelectionRafRef.current !== null) {
-        cancelAnimationFrame(cellSelectionRafRef.current);
-      }
-
-      cellSelectionRafRef.current = requestAnimationFrame(() => {
-        cellSelectionRafRef.current = null;
-        applySelectionUpdate(cellInfo);
-      });
-    };
-
-    const stopAutoScroll = () => {
-      if (cellSelectionAutoScrollRafRef.current !== null) {
-        cancelAnimationFrame(cellSelectionAutoScrollRafRef.current);
-        cellSelectionAutoScrollRafRef.current = null;
-      }
-    };
-
-    const getScrollStep = (distanceToEdge: number): number => {
-      const ratio = Math.min(1, Math.max(0, distanceToEdge / EDGE_THRESHOLD_PX));
-      return Math.round(MIN_SCROLL_STEP + (MAX_SCROLL_STEP - MIN_SCROLL_STEP) * ratio);
-    };
-
-    const autoScrollTick = () => {
-      if (!isDraggingRef.current || !selectionStartRef.current) {
-        stopAutoScroll();
-        return;
-      }
-
-      const pointer = cellSelectionPointerRef.current;
-      const tableBody = container.querySelector('.ant-table-body') as HTMLElement | null;
-      if (!pointer || !tableBody) {
-        cellSelectionAutoScrollRafRef.current = requestAnimationFrame(autoScrollTick);
-        return;
-      }
-
-      const rect = tableBody.getBoundingClientRect();
-      const maxScrollTop = Math.max(0, tableBody.scrollHeight - tableBody.clientHeight);
-      const maxScrollLeft = Math.max(0, tableBody.scrollWidth - tableBody.clientWidth);
-      let deltaY = 0;
-      let deltaX = 0;
-
-      if (pointer.y < rect.top + EDGE_THRESHOLD_PX && tableBody.scrollTop > 0) {
-        const distance = rect.top + EDGE_THRESHOLD_PX - pointer.y;
-        deltaY = -getScrollStep(distance);
-      } else if (pointer.y > rect.bottom - EDGE_THRESHOLD_PX && tableBody.scrollTop < maxScrollTop) {
-        const distance = pointer.y - (rect.bottom - EDGE_THRESHOLD_PX);
-        deltaY = getScrollStep(distance);
-      }
-
-      if (pointer.x < rect.left + EDGE_THRESHOLD_PX && tableBody.scrollLeft > 0) {
-        const distance = rect.left + EDGE_THRESHOLD_PX - pointer.x;
-        deltaX = -getScrollStep(distance);
-      } else if (pointer.x > rect.right - EDGE_THRESHOLD_PX && tableBody.scrollLeft < maxScrollLeft) {
-        const distance = pointer.x - (rect.right - EDGE_THRESHOLD_PX);
-        deltaX = getScrollStep(distance);
-      }
-
-      let didScroll = false;
-      if (deltaY !== 0) {
-        const nextTop = Math.max(0, Math.min(maxScrollTop, tableBody.scrollTop + deltaY));
-        if (nextTop !== tableBody.scrollTop) {
-          tableBody.scrollTop = nextTop;
-          didScroll = true;
-        }
-      }
-
-      if (deltaX !== 0) {
-        const nextLeft = Math.max(0, Math.min(maxScrollLeft, tableBody.scrollLeft + deltaX));
-        if (nextLeft !== tableBody.scrollLeft) {
-          tableBody.scrollLeft = nextLeft;
-          didScroll = true;
-        }
-      }
-
-      if (didScroll) {
-        const cellInfo = getCellInfoFromPoint(pointer.x, pointer.y);
-        if (cellInfo) scheduleSelectionUpdate(cellInfo);
-      }
-
-      cellSelectionAutoScrollRafRef.current = requestAnimationFrame(autoScrollTick);
-    };
-
-    const ensureAutoScroll = () => {
-      if (cellSelectionAutoScrollRafRef.current !== null) return;
-      cellSelectionAutoScrollRafRef.current = requestAnimationFrame(autoScrollTick);
-    };
-
-    const beginCellSelection = (cellInfo: { rowKey: string; colName: string }, x: number, y: number) => {
-      if (!cellEditModeRef.current) {
-        cellEditModeRef.current = true;
-        setCellEditMode(true);
-      }
-      suppressCellSelectionClickRef.current = true;
-      pendingCellSelectionStartRef.current = null;
-      isDraggingRef.current = true;
-      cellSelectionPointerRef.current = { x, y };
-
-      const currentData = displayDataRef.current;
-      const nextRowIndexMap = new Map<string, number>();
-      currentData.forEach((r, idx) => {
-        const k = r?.[GONAVI_ROW_KEY];
-        if (k === undefined) return;
-        nextRowIndexMap.set(String(k), idx);
-      });
-      rowIndexMapRef.current = nextRowIndexMap;
-
-      const startRowIndex = nextRowIndexMap.get(cellInfo.rowKey) ?? -1;
-      const startColIndex = columnIndexMap.get(cellInfo.colName) ?? -1;
-      selectionStartRef.current = { rowKey: cellInfo.rowKey, colName: cellInfo.colName, rowIndex: startRowIndex, colIndex: startColIndex };
-      currentSelectionRef.current = new Set([makeCellKey(cellInfo.rowKey, cellInfo.colName)]);
-      updateCellSelection(currentSelectionRef.current);
-      ensureAutoScroll();
-    };
-
-    const onMouseDown = (e: MouseEvent) => {
-      if (e.button !== 0) return;
-      const target = e.target instanceof HTMLElement ? e.target : null;
-      if (isInteractiveTarget(target)) return;
-      const cellInfo = getCellInfo(target);
-      if (!cellInfo) return;
-
-      if (cellEditModeRef.current) {
-        e.preventDefault();
-        beginCellSelection(cellInfo, e.clientX, e.clientY);
-        return;
-      }
-
-      pendingCellSelectionStartRef.current = { ...cellInfo, x: e.clientX, y: e.clientY };
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-      const pendingStart = pendingCellSelectionStartRef.current;
-      if (!isDraggingRef.current && pendingStart) {
-        const dx = e.clientX - pendingStart.x;
-        const dy = e.clientY - pendingStart.y;
-        if (Math.hypot(dx, dy) < CELL_SELECTION_DRAG_THRESHOLD_PX) return;
-
-        e.preventDefault();
-        beginCellSelection(
-          { rowKey: pendingStart.rowKey, colName: pendingStart.colName },
-          e.clientX,
-          e.clientY,
-        );
-      }
-
-      if (!isDraggingRef.current || !selectionStartRef.current) return;
-      e.preventDefault();
-      cellSelectionPointerRef.current = { x: e.clientX, y: e.clientY };
-      ensureAutoScroll();
-
-      const target = e.target instanceof HTMLElement ? e.target : null;
-      const cellInfo = getCellInfo(target) || getCellInfoFromPoint(e.clientX, e.clientY);
-      if (!cellInfo) return;
-      scheduleSelectionUpdate(cellInfo);
-    };
-
-    const onMouseUp = (e: MouseEvent) => {
-      pendingCellSelectionStartRef.current = null;
-      if (!isDraggingRef.current) return;
-      isDraggingRef.current = false;
-      cellSelectionPointerRef.current = null;
-      stopAutoScroll();
-
-      if (cellSelectionRafRef.current !== null) {
-        cancelAnimationFrame(cellSelectionRafRef.current);
-        cellSelectionRafRef.current = null;
-      }
-
-      const target = e.target instanceof HTMLElement ? e.target : null;
-      const cellInfo = getCellInfo(target) || getCellInfoFromPoint(e.clientX, e.clientY);
-      if (cellInfo) applySelectionUpdate(cellInfo);
-
-      if (currentSelectionRef.current.size > 0) {
-        setSelectedCells(new Set(currentSelectionRef.current));
-      }
-    };
-
-    const onClickCapture = (e: MouseEvent) => {
-      if (!suppressCellSelectionClickRef.current) return;
-      suppressCellSelectionClickRef.current = false;
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
-    const onScroll = () => {
-      if (currentSelectionRef.current.size === 0) return;
-      if (cellSelectionScrollRafRef.current !== null) {
-        cancelAnimationFrame(cellSelectionScrollRafRef.current);
-      }
-      cellSelectionScrollRafRef.current = requestAnimationFrame(() => {
-        cellSelectionScrollRafRef.current = null;
-        updateCellSelection(currentSelectionRef.current);
-      });
-    };
-
-    container.addEventListener('mousedown', onMouseDown);
-    container.addEventListener('mousemove', onMouseMove);
-    container.addEventListener('click', onClickCapture, true);
-    container.addEventListener('scroll', onScroll, true);
-    document.addEventListener('mouseup', onMouseUp);
-
-    return () => {
-      container.removeEventListener('mousedown', onMouseDown);
-      container.removeEventListener('mousemove', onMouseMove);
-      container.removeEventListener('click', onClickCapture, true);
-      container.removeEventListener('scroll', onScroll, true);
-      document.removeEventListener('mouseup', onMouseUp);
-      if (cellSelectionRafRef.current !== null) {
-        cancelAnimationFrame(cellSelectionRafRef.current);
-        cellSelectionRafRef.current = null;
-      }
-      if (cellSelectionScrollRafRef.current !== null) {
-        cancelAnimationFrame(cellSelectionScrollRafRef.current);
-        cellSelectionScrollRafRef.current = null;
-      }
-      stopAutoScroll();
-      pendingCellSelectionStartRef.current = null;
-      cellSelectionPointerRef.current = null;
-      isDraggingRef.current = false;
-    };
-  }, [canModifyData, isTableSurfaceActive, displayColumnNames, columnIndexMap, effectiveEditLocator, updateCellSelection]);
 
   const handleCopySelectedColumnsFromRow = useCallback(() => {
     const activeSelection = currentSelectionRef.current.size > 0 ? currentSelectionRef.current : selectedCells;
