@@ -1180,7 +1180,9 @@ describe('Sidebar locate toolbar', () => {
     expect(source).toContain('itemHeight={V2_TREE_ITEM_HEIGHT}');
     expect(utilsSource).toContain('export const V2_TREE_ITEM_HEIGHT = 18;');
     expect(source).toContain('gn-v2-explorer-dock');
-    expect(source).toContain('gn-v2-object-explorer is-tree-first');
+    expect(source).toContain("className={'gn-v2-object-explorer'}");
+    expect(source).not.toContain('is-tree-first');
+    expect(source.indexOf('gn-v2-explorer-dock')).toBeLessThan(source.indexOf('gn-v2-explorer-tree-shell'));
     expect(css).not.toContain('.gn-v2-tree-connection-meta');
   });
 

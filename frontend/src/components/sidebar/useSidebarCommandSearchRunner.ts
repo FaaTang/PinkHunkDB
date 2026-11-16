@@ -14,7 +14,7 @@ type UseSidebarCommandSearchRunnerArgs = {
   commandSearchFlatItems: V2CommandSearchItem[];
   connectionIds: string[];
   findTreeNodeByKeyRef: MutableRefObject<(nodes: TreeNode[], targetKey: React.Key) => TreeNode | null>;
-  locateObjectInSidebar: (detail: unknown) => Promise<void>;
+  locateObjectInSidebar: (detail: unknown) => Promise<boolean>;
   loadDatabases: (node: any) => Promise<void>;
   mergeExpandedTreeKeys: (requiredKeys: React.Key[]) => void;
   onDoubleClick: (event: any, node: any) => void;

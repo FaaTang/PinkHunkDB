@@ -3545,68 +3545,7 @@ const Sidebar: React.FC<{
     <div className={'gn-v2-sidebar-redesign'} style={{ display: 'flex', height: '100%', minHeight: 0 }}>
         {exportProgressModal}
         {<SidebarConnectionRail {...v2ConnectionRailProps} />}
-        <div className={'gn-v2-object-explorer is-tree-first'} style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0, flex: 1 }}>
-        <div
-            ref={treeContainerRef}
-            className={`sidebar-tree-scroll-shell gn-v2-explorer-tree-shell`}
-            tabIndex={-1}
-            onMouseDown={(event) => {
-                if ((event.target as HTMLElement | null)?.closest('.ant-tree')) {
-                    // 只武装快捷键，不在 mousedown 抢焦点；否则从编辑器切过来时容易打断双击
-                    markSidebarTreeInteraction({ focus: false });
-                }
-            }}
-            onKeyDown={handleSidebarTreeKeyboardShortcut}
-            style={{
-                flex: 1,
-                overflow: 'hidden',
-                minHeight: 0,
-                outline: 'none',
-            }}
-        >
-            <div className="sidebar-tree-scroll-content">
-                <Tree
-                    ref={treeRef}
-                    multiple
-                    showIcon
-                    draggable={{
-                        icon: false,
-                        nodeDraggable: (node: any) => node.type === 'connection' || node.type === 'tag'
-                    }}
-                    onDragStart={() => {
-                        snapshotTreeSelectionBeforeDrag();
-                        treeDragSelectSuppressUntilRef.current = Date.now() + 600;
-                        setIsTreeDragging(true);
-                    }}
-                    onDragEnter={() => {
-                        treeDragSelectSuppressUntilRef.current = Date.now() + 600;
-                        setIsTreeDragging(true);
-                    }}
-                    onDragEnd={() => {
-                        restoreTreeSelectionAfterDrag();
-                        setIsTreeDragging(false);
-                    }}
-                    onDrop={handleDrop}
-                    loadData={onLoadData}
-                    treeData={v2VisibleTreeData}
-                    onDoubleClick={onDoubleClick}
-                    onSelect={onSelect}
-                    titleRender={titleRender}
-                    expandedKeys={expandedKeys}
-                    onExpand={onExpand}
-                    loadedKeys={loadedKeys}
-                    onLoad={setLoadedKeys}
-                    autoExpandParent={autoExpandParent}
-                    selectedKeys={selectedKeys}
-                    blockNode
-                    height={effectiveTreeHeight}
-                    itemHeight={V2_TREE_ITEM_HEIGHT}
-                    scrollWidth={v2TreeHorizontalScrollWidth}
-                    onRightClick={onRightClick}
-                />
-            </div>
-        </div>
-
+        <div className={'gn-v2-object-explorer'} style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0, flex: 1 }}>
         <div className="gn-v2-explorer-dock" aria-label={t('sidebar.command_search.object_kind.filter_aria')}>
             <div className="gn-v2-explorer-dock-tools">
                 <div className="gn-v2-explorer-search">
@@ -3778,6 +3717,66 @@ const Sidebar: React.FC<{
                         </div>
                     ))}
                 </div>
+            </div>
+        </div>
+        <div
+            ref={treeContainerRef}
+            className={`sidebar-tree-scroll-shell gn-v2-explorer-tree-shell`}
+            tabIndex={-1}
+            onMouseDown={(event) => {
+                if ((event.target as HTMLElement | null)?.closest('.ant-tree')) {
+                    // 只武装快捷键，不在 mousedown 抢焦点；否则从编辑器切过来时容易打断双击
+                    markSidebarTreeInteraction({ focus: false });
+                }
+            }}
+            onKeyDown={handleSidebarTreeKeyboardShortcut}
+            style={{
+                flex: 1,
+                overflow: 'hidden',
+                minHeight: 0,
+                outline: 'none',
+            }}
+        >
+            <div className="sidebar-tree-scroll-content">
+                <Tree
+                    ref={treeRef}
+                    multiple
+                    showIcon
+                    draggable={{
+                        icon: false,
+                        nodeDraggable: (node: any) => node.type === 'connection' || node.type === 'tag'
+                    }}
+                    onDragStart={() => {
+                        snapshotTreeSelectionBeforeDrag();
+                        treeDragSelectSuppressUntilRef.current = Date.now() + 600;
+                        setIsTreeDragging(true);
+                    }}
+                    onDragEnter={() => {
+                        treeDragSelectSuppressUntilRef.current = Date.now() + 600;
+                        setIsTreeDragging(true);
+                    }}
+                    onDragEnd={() => {
+                        restoreTreeSelectionAfterDrag();
+                        setIsTreeDragging(false);
+                    }}
+                    onDrop={handleDrop}
+                    loadData={onLoadData}
+                    treeData={v2VisibleTreeData}
+                    onDoubleClick={onDoubleClick}
+                    onSelect={onSelect}
+                    titleRender={titleRender}
+                    expandedKeys={expandedKeys}
+                    onExpand={onExpand}
+                    loadedKeys={loadedKeys}
+                    onLoad={setLoadedKeys}
+                    autoExpandParent={autoExpandParent}
+                    selectedKeys={selectedKeys}
+                    blockNode
+                    height={effectiveTreeHeight}
+                    itemHeight={V2_TREE_ITEM_HEIGHT}
+                    scrollWidth={v2TreeHorizontalScrollWidth}
+                    onRightClick={onRightClick}
+                />
             </div>
         </div>
         </div>

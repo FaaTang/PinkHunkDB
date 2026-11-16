@@ -2179,20 +2179,13 @@ body[data-ui-version="v2"] .gn-v2-object-explorer {
   overflow: hidden;
 }
 
-body[data-ui-version="v2"] .gn-v2-object-explorer.is-tree-first > .gn-v2-explorer-tree-shell {
-  order: 0;
-  flex: 1 1 auto;
-  min-height: 0;
-  border-bottom: 0.5px solid var(--gn-br-1);
-}
-
 body[data-ui-version="v2"] .gn-v2-explorer-dock {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 4px 6px 4px;
-  border-top: 0;
+  border-bottom: 0.5px solid var(--gn-br-1);
   background: var(--gn-bg-panel-2);
 }
 
