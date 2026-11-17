@@ -150,7 +150,6 @@ describe("i18n catalog", () => {
       "app.security_update.stage.checking_saved_config",
       "app.security_update.stage.updating_secure_storage",
       "app.security_update.stage.verifying_result",
-      "app.sidebar.ai_assistant",
       "app.sidebar.resize_width",
       "app.sidebar.settings",
       "app.sidebar.sql_execution_log",
@@ -160,11 +159,6 @@ describe("i18n catalog", () => {
       "app.window_zoom.message.reset_success",
       "app.window_zoom.message.reset_success_fallback",
       "app.window_zoom.message.windows_only",
-      "app.ai_panel.action.close",
-      "app.ai_panel.action.reload",
-      "app.ai_panel.aria.close",
-      "app.ai_panel.error.description",
-      "app.ai_panel.error.title",
       "app.about.title",
       "app.about.field.update_status",
       "app.about.field.update_download_path",
@@ -248,16 +242,12 @@ describe("i18n catalog", () => {
       "app.shortcuts.action.saveQuery.label",
       "app.shortcuts.action.selectCurrentStatement.description",
       "app.shortcuts.action.selectCurrentStatement.label",
-      "app.shortcuts.action.sendAIChatMessage.description",
-      "app.shortcuts.action.sendAIChatMessage.label",
       "app.shortcuts.action.switchToNextTab.description",
       "app.shortcuts.action.switchToNextTab.label",
       "app.shortcuts.action.switchToPreviousTab.description",
       "app.shortcuts.action.switchToPreviousTab.label",
       "app.shortcuts.action.closeCurrentTab.description",
       "app.shortcuts.action.closeCurrentTab.label",
-      "app.shortcuts.action.toggleAIPanel.description",
-      "app.shortcuts.action.toggleAIPanel.label",
       "app.shortcuts.action.toggleLogPanel.description",
       "app.shortcuts.action.toggleLogPanel.label",
       "app.shortcuts.action.toggleMacFullscreen.description",
@@ -271,7 +261,6 @@ describe("i18n catalog", () => {
       "app.shortcuts.context.monaco",
       "app.shortcuts.context.sidebar",
       "app.shortcuts.description",
-      "app.shortcuts.message.ai_send_limit",
       "app.shortcuts.message.conflict",
       "app.shortcuts.message.modifier_required",
       "app.shortcuts.message.reserved_conflict_info",
@@ -735,7 +724,7 @@ describe("i18n catalog", () => {
     expect(aboutModalSource).not.toContain("项目入口");
   });
 
-  it("keeps App top-level security, data-root, sidebar, zoom, AI panel, and tool-entry shell copy out of source literals", () => {
+  it("keeps App top-level security, data-root, sidebar, zoom, and tool-entry shell copy out of source literals", () => {
     const source = readAppSource();
     const securityInitialStageSource = sliceBetween(
       source,
@@ -757,11 +746,6 @@ describe("i18n catalog", () => {
       source,
       "const handleManualResetWindowZoom = React.useCallback(async () => {",
       "} = useAppSidebarResize({",
-    );
-    const aiPanelSource = sliceBetween(
-      source,
-      "<AIPanelErrorBoundary",
-      "<AIChatPanel",
     );
     const toolsModalSource = sliceBetween(
       source,
@@ -807,12 +791,10 @@ describe("i18n catalog", () => {
 
     expect(sidebarUtilitySource).toContain("app.sidebar.tools");
     expect(sidebarUtilitySource).toContain("app.sidebar.settings");
-    expect(sidebarUtilitySource).toContain("app.sidebar.ai_assistant");
     expect(source).toContain("app.sidebar.resize_width");
     expect(sidebarUtilitySource).toContain("app.sidebar.sql_execution_log");
     expect(sidebarUtilitySource).not.toContain("title: '工具'");
     expect(sidebarUtilitySource).not.toContain("title: '设置'");
-    expect(sidebarUtilitySource).not.toContain("AI 助手");
     expect(source).not.toContain('title="拖动调整宽度"');
     expect(source).not.toContain("SQL 执行日志");
 
@@ -827,16 +809,6 @@ describe("i18n catalog", () => {
     expect(windowZoomSource).not.toContain("已重置窗口缩放（回退方案）");
     expect(windowZoomSource).not.toContain("重置窗口缩放失败");
 
-    expect(aiPanelSource).toContain("app.ai_panel.aria.close");
-    expect(aiPanelSource).toContain("app.ai_panel.error.title");
-    expect(aiPanelSource).toContain("app.ai_panel.error.description");
-    expect(aiPanelSource).toContain("app.ai_panel.action.close");
-    expect(aiPanelSource).toContain("app.ai_panel.action.reload");
-    expect(aiPanelSource).not.toContain("关闭 AI 面板");
-    expect(aiPanelSource).not.toContain("AI 面板加载失败");
-    expect(aiPanelSource).not.toContain("这通常是开发环境热更新后懒加载资源失效导致的。已阻止整页白屏，你可以直接重试。");
-    expect(aiPanelSource).not.toContain("关闭面板");
-    expect(aiPanelSource).not.toContain("重新加载");
 
     expect(toolsModalSource).toContain("app.tools.entry.snippets.title");
     expect(toolsModalSource).toContain("app.tools.entry.snippets.description");
@@ -1965,209 +1937,6 @@ describe("i18n catalog", () => {
     expect(oracleRowIdFallbackSource).not.toContain("Oracle 查询使用 * 时无法自动注入 ROWID 定位列，已保持只读。");
 
     assertSourceDoesNotInlineCatalogValues(oracleRowIdFallbackSource, [oracleRowIdFallbackReasonKey, readOnlyWarningWrapperKey]);
-  });
-
-  it("keeps QueryEditor AI context menu labels in catalogs instead of source literals", () => {
-    const actionLabelKeys = [
-      "query_editor.action.ai_generate_sql_menu",
-      "query_editor.action.ai_explain_sql_menu",
-      "query_editor.action.ai_optimize_sql_menu",
-    ] as const;
-    const source = readQueryEditorSource();
-    const aiActionsSource = sliceBetween(
-      source,
-      "  const buildQueryEditorAiContextMenuActions = useCallback(() => ([",
-      "  const disposeQueryEditorAiContextMenuActions = useCallback(() => {",
-    );
-
-    for (const language of SUPPORTED_LANGUAGES) {
-      for (const key of actionLabelKeys) {
-        expect(catalogs[language]).toHaveProperty(key);
-        expect(catalogs[language][key]).toBeTruthy();
-      }
-    }
-
-    for (const key of actionLabelKeys) {
-      expect(aiActionsSource).toContain(key);
-    }
-
-    expect(aiActionsSource).not.toContain("🤖 AI 生成 SQL");
-    expect(aiActionsSource).not.toContain("🤖 AI 解释 SQL");
-    expect(aiActionsSource).not.toContain("🤖 AI 优化 SQL");
-
-    assertSourceDoesNotInlineCatalogValues(aiActionsSource, actionLabelKeys);
-  });
-
-  it("keeps QueryEditor AI prompt context in catalogs instead of source literals", () => {
-    const aiContextKeys = [
-      "query_editor.ai_prompt.default_source",
-      "query_editor.ai_prompt.default_database",
-      "query_editor.ai_prompt.context",
-    ] as const;
-    const source = readQueryEditorSource();
-    const aiContextSource = sliceBetween(
-      source,
-      "const buildQueryEditorAiContextPrompt = (connection: any, database: string): string => {",
-      "// HMR 重载时释放旧注册避免补全和 hover 内容重复",
-    );
-
-    for (const language of SUPPORTED_LANGUAGES) {
-      for (const key of aiContextKeys) {
-        expect(catalogs[language]).toHaveProperty(key);
-        expect(catalogs[language][key]).toBeTruthy();
-      }
-    }
-
-    for (const key of aiContextKeys) {
-      expect(aiContextSource).toContain(key);
-    }
-
-    expect(aiContextSource).not.toContain("【上下文环境：");
-    expect(aiContextSource).not.toContain("当前库选定为");
-
-    assertSourceDoesNotInlineCatalogValues(aiContextSource, aiContextKeys);
-  });
-
-  it("keeps QueryEditor AI context menu prompts in catalogs instead of source literals", () => {
-    const promptKeys = [
-      "query_editor.ai_prompt.generate",
-      "query_editor.ai_prompt.explain",
-      "query_editor.ai_prompt.optimize",
-    ] as const;
-    const source = readQueryEditorSource();
-    const aiActionsSource = sliceBetween(
-      source,
-      "  const buildQueryEditorAiContextMenuActions = useCallback(() => ([",
-      "  const disposeQueryEditorAiContextMenuActions = useCallback(() => {",
-    );
-
-    for (const language of SUPPORTED_LANGUAGES) {
-      for (const key of promptKeys) {
-        expect(catalogs[language]).toHaveProperty(key);
-        expect(catalogs[language][key]).toBeTruthy();
-      }
-    }
-
-    for (const key of promptKeys) {
-      expect(aiActionsSource).toContain(key);
-    }
-
-    expect(aiActionsSource).not.toContain("请根据当前数据库表结构生成查询语句：");
-    expect(aiActionsSource).not.toContain("请解释以下 SQL 语句的执行逻辑：");
-    expect(aiActionsSource).not.toContain("请分析以下 SQL 语句的性能并给出优化建议：");
-
-    assertSourceDoesNotInlineCatalogValues(aiActionsSource, promptKeys);
-  });
-
-  it("keeps QueryEditor slash command definitions in catalogs instead of source literals", () => {
-    const slashKeys = [
-      "query_editor.slash_command.query.label",
-      "query_editor.slash_command.query.description",
-      "query_editor.slash_command.query.prompt",
-      "query_editor.slash_command.sql.label",
-      "query_editor.slash_command.sql.description",
-      "query_editor.slash_command.sql.prompt",
-      "query_editor.slash_command.schema.label",
-      "query_editor.slash_command.schema.description",
-      "query_editor.slash_command.schema.prompt",
-      "query_editor.slash_command.index.label",
-      "query_editor.slash_command.index.description",
-      "query_editor.slash_command.index.prompt",
-      "query_editor.slash_command.diff.label",
-      "query_editor.slash_command.diff.description",
-      "query_editor.slash_command.diff.prompt",
-      "query_editor.slash_command.mock.label",
-      "query_editor.slash_command.mock.description",
-      "query_editor.slash_command.mock.prompt",
-      "query_editor.slash_command.explain.label",
-      "query_editor.slash_command.explain.description",
-      "query_editor.slash_command.explain.prompt",
-      "query_editor.slash_command.optimize.label",
-      "query_editor.slash_command.optimize.description",
-      "query_editor.slash_command.optimize.prompt",
-    ] as const;
-    const source = readQueryEditorSource();
-    const slashDefinitionsSource = sliceBetween(
-      source,
-      "  const buildQueryEditorSlashCommandDefs = useCallback(() => ([",
-      "  const refreshQueryEditorSlashCommandDefs = useCallback(() => {",
-    );
-
-    for (const language of SUPPORTED_LANGUAGES) {
-      for (const key of slashKeys) {
-        expect(catalogs[language]).toHaveProperty(key);
-        expect(catalogs[language][key]).toBeTruthy();
-      }
-    }
-
-    for (const key of slashKeys) {
-      expect(slashDefinitionsSource).toContain(key);
-    }
-
-    expect(slashDefinitionsSource).not.toContain("自然语言查询");
-    expect(slashDefinitionsSource).not.toContain("描述需求自动生成语句");
-    expect(slashDefinitionsSource).not.toContain("请根据以下需求生成 SQL：");
-
-    assertSourceDoesNotInlineCatalogValues(slashDefinitionsSource, slashKeys);
-  });
-
-  it("keeps QueryEditor slash prompt injection flow free of inline Chinese wrappers", () => {
-    const source = readQueryEditorSource();
-    const slashInjectionSource = sliceBetween(
-      source,
-      "      // 每个编辑器实例都注册内容变化监听（检测斜杠命令标记）",
-      "  const handleFormat = () => {",
-    );
-
-    expect(slashInjectionSource).toContain("cmdDef.prompt");
-    expect(slashInjectionSource).not.toContain("【上下文环境：");
-    expect(slashInjectionSource).not.toContain("当前库选定为");
-    expect(slashInjectionSource).not.toContain("数据库'}");
-    expect(slashInjectionSource).not.toContain("默认'}");
-  });
-
-  it("keeps QueryEditor toolbar and diagnose AI prompts in catalogs instead of source literals", () => {
-    const toolbarPromptKeys = [
-      "query_editor.ai_prompt.generate",
-      "query_editor.ai_prompt.explain",
-      "query_editor.ai_prompt.optimize",
-      "query_editor.ai_prompt.schema",
-    ] as const;
-    const diagnosePromptKeys = [
-      "query_editor.ai_prompt.diagnose",
-    ] as const;
-    const source = readQueryEditorSource();
-    const toolbarPromptSource = sliceBetween(
-      source,
-      "  const handleAIAction = (action: 'generate' | 'explain' | 'optimize' | 'schema') => {",
-      "  const formatSettingsMenu: MenuProps['items'] = [",
-    );
-    const diagnosePromptSource = sliceBetween(
-      source,
-      "  const handleDiagnoseExecutionError = () => {",
-      "  const sqlEditorTransactionToolbar = (",
-    );
-    const toolbarAndDiagnoseSource = `${toolbarPromptSource}\n${diagnosePromptSource}`;
-
-    for (const language of SUPPORTED_LANGUAGES) {
-      for (const key of [...toolbarPromptKeys, ...diagnosePromptKeys]) {
-        expect(catalogs[language]).toHaveProperty(key);
-        expect(catalogs[language][key]).toBeTruthy();
-      }
-    }
-
-    for (const key of toolbarPromptKeys) {
-      expect(toolbarPromptSource).toContain(key);
-    }
-    expect(diagnosePromptSource).toContain("query_editor.ai_prompt.diagnose");
-
-    expect(toolbarAndDiagnoseSource).not.toContain("请针对当前数据库的表结构进行系统分析");
-    expect(toolbarAndDiagnoseSource).not.toContain("我在执行以下 SQL 时遇到了错误：");
-
-    assertSourceDoesNotInlineCatalogValues(toolbarAndDiagnoseSource, [
-      ...toolbarPromptKeys,
-      ...diagnosePromptKeys,
-    ]);
   });
 
   it("keeps QueryEditor Monaco action labels in catalogs instead of source literals", () => {

@@ -37,10 +37,7 @@ $patterns = @(
   @{ Old = 'gonavi_iotdb_driver'; New = 'gonavi_iotdb_driver' },
   @{ Old = 'gonavi_clickhouse_driver'; New = 'gonavi_clickhouse_driver' },
   @{ Old = 'gonavi_elasticsearch_driver'; New = 'gonavi_elasticsearch_driver' },
-  @{ Old = 'gonavi_trino_driver'; New = 'gonavi_trino_driver' },
-  @{ Old = 'gonavi-mcp-server remote-config'; New = 'gonavi-mcp-server remote-config' },
-  @{ Old = 'StandaloneCommand: "gonavi-mcp-server"'; New = 'StandaloneCommand: "gonavi-mcp-server"' },
-  @{ Old = 'options.StandaloneCommand = "gonavi-mcp-server"'; New = 'options.StandaloneCommand = "gonavi-mcp-server"' }
+  @{ Old = 'gonavi_trino_driver'; New = 'gonavi_trino_driver' }
 )
 
 $extensions = @('*.go', '*.ts', '*.tsx', '*.json', '*.md', '*.yml', '*.sh', '*.ps1')

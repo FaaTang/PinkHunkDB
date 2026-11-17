@@ -3,7 +3,6 @@ import {
   DEFAULT_MEMORY_SETTINGS,
   buildMemoryPolicyPayload,
   effectiveLowMemoryModeFromEnv,
-  resolveAiMessageMemoryLimit,
   resolveEffectiveAppearanceValues,
   resolveMemoryPolicy,
   resolveRuntimeSqlLogLimit,
@@ -11,7 +10,6 @@ import {
   sanitizeMemorySettings,
   shouldDestroyInactiveTabs,
   shouldLazyLoadHeavyModules,
-  shouldLoadAIAssistant,
 } from "./memoryPolicy";
 
 const DEFAULT_APPEARANCE_FOR_POLICY = {
@@ -25,18 +23,12 @@ describe("memoryPolicy", () => {
     vi.unstubAllEnvs();
   });
 
-  it("defaults aiAssistantEnabled to false", () => {
-    expect(DEFAULT_MEMORY_SETTINGS.aiAssistantEnabled).toBe(false);
-  });
-
   it("uses normal limits when low memory is off", () => {
     const policy = resolveMemoryPolicy(DEFAULT_MEMORY_SETTINGS, DEFAULT_APPEARANCE_FOR_POLICY);
     expect(resolveSidebarDbCacheLimit(policy)).toBe(12);
     expect(resolveRuntimeSqlLogLimit(policy)).toBe(120);
     expect(shouldDestroyInactiveTabs(policy)).toBe(false);
-    expect(resolveAiMessageMemoryLimit(policy)).toBeNull();
     expect(shouldLazyLoadHeavyModules(policy)).toBe(false);
-    expect(shouldLoadAIAssistant(policy)).toBe(false);
     expect(buildMemoryPolicyPayload(policy)).toEqual({
       lowMemoryMode: false,
       goGCPercent: 50,
@@ -52,7 +44,6 @@ describe("memoryPolicy", () => {
     expect(resolveSidebarDbCacheLimit(policy)).toBe(6);
     expect(resolveRuntimeSqlLogLimit(policy)).toBe(60);
     expect(shouldDestroyInactiveTabs(policy)).toBe(true);
-    expect(resolveAiMessageMemoryLimit(policy)).toBe(50);
     expect(shouldLazyLoadHeavyModules(policy)).toBe(true);
     expect(buildMemoryPolicyPayload(policy)).toEqual({
       lowMemoryMode: true,
@@ -77,34 +68,20 @@ describe("memoryPolicy", () => {
         destroyInactiveTabs: false,
         sidebarDbCacheLimit: 99,
         runtimeSqlLogLimit: 10,
-        aiMessageMemoryLimit: 5,
         sidebarIdleReleaseMinutes: 45,
         goGCPercent: 200,
       },
     })).toEqual({
       lowMemoryMode: true,
-      aiAssistantEnabled: true,
       advanced: {
         destroyInactiveTabs: false,
         sidebarDbCacheLimit: 24,
         runtimeSqlLogLimit: 30,
-        aiMessageMemoryLimit: 20,
         sidebarIdleReleaseMinutes: 30,
         goGCPercent: 100,
       },
       queryMaxRowsStash: null,
     });
-  });
-
-  it("shouldLoadAIAssistant follows aiAssistantEnabled setting", () => {
-    const disabledPolicy = resolveMemoryPolicy(DEFAULT_MEMORY_SETTINGS, DEFAULT_APPEARANCE_FOR_POLICY);
-    expect(shouldLoadAIAssistant(disabledPolicy)).toBe(false);
-
-    const enabledPolicy = resolveMemoryPolicy(
-      { ...DEFAULT_MEMORY_SETTINGS, aiAssistantEnabled: true },
-      DEFAULT_APPEARANCE_FOR_POLICY,
-    );
-    expect(shouldLoadAIAssistant(enabledPolicy)).toBe(true);
   });
 
   it("sanitizes queryMaxRowsStash and ignores incomplete stash objects", () => {

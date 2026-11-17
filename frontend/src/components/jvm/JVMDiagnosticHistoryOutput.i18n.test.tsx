@@ -29,7 +29,7 @@ describe("JVMDiagnosticHistory and JVMDiagnosticOutput i18n", () => {
             status: "running",
             riskLevel: "high",
             commandType: "trace",
-            source: "ai-plan",
+            source: "manual",
             timestamp: 1713945600000,
           },
         ]}
@@ -42,7 +42,6 @@ describe("JVMDiagnosticHistory and JVMDiagnosticOutput i18n", () => {
     expect(historyMarkup).toContain("Running");
     expect(historyMarkup).toContain("High risk");
     expect(historyMarkup).toContain("Trace");
-    expect(historyMarkup).toContain("AI plan");
     expect(historyMarkup).toContain("No diagnostic reason provided");
     expect(historyMarkup).not.toContain("当前会话");
     expect(historyMarkup).not.toContain("尚未建立诊断会话");

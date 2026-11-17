@@ -3,9 +3,7 @@ import "dayjs/locale/zh-cn";
 import "dayjs/locale/en";
 import type { SupportedLanguage } from "./types";
 
-const appApi = () => (window as any)?.go?.app?.App;
-const aiApi = () => (window as any)?.go?.aiservice?.Service;
-let lastSyncedLanguage: SupportedLanguage | null = null;
+const appApi = () => (window as any)?.go?.app?.App;let lastSyncedLanguage: SupportedLanguage | null = null;
 let desiredLanguage: SupportedLanguage | null = null;
 let activeSyncLoop: Promise<void> | null = null;
 
@@ -36,11 +34,6 @@ export async function syncLanguageRuntime(language: SupportedLanguage): Promise<
       if (typeof app?.SetLanguage === "function") {
         tasks.push(app.SetLanguage(targetLanguage));
       }
-      const ai = aiApi();
-      if (typeof ai?.AISetLanguage === "function") {
-        tasks.push(ai.AISetLanguage(targetLanguage));
-      }
-
       const results = await Promise.allSettled(tasks);
       const failures = results.filter((result) => result.status === "rejected");
       if (failures.length > 0) {

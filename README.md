@@ -80,10 +80,6 @@ PinkHunkDB is designed for developers and DBAs who need a unified desktop experi
 
 ## Key Features
 
-### AI Assistant (New)
-- **Multi-provider Support**: OpenAI, Google Gemini, Anthropic Claude, and custom API support.
-- **Context-Aware Chat**: Attach table schemas to the AI context for accurate SQL generation and assistance.
-- **Slash Commands**: Quick commands for generating SQL, explaining queries, optimizing performance, and reviewing schema designs.
 
 ### Performance
 - **Smooth interaction under load**: optimized table interaction (including column resize workflow on large datasets).

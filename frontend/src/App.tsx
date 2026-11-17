@@ -1,7 +1,7 @@
 import Modal from './components/common/ResizableDraggableModal';
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import { Layout, Button, ConfigProvider, theme, message, Spin, Slider, Progress, Switch, Input, InputNumber, Select, Segmented, Tooltip } from 'antd';
-import { PlusOutlined, ConsoleSqlOutlined, UploadOutlined, DownloadOutlined, CloudDownloadOutlined, ToolOutlined, GlobalOutlined, InfoCircleOutlined, GithubOutlined, SkinOutlined, CheckOutlined, MinusOutlined, BorderOutlined, CloseOutlined, SettingOutlined, LinkOutlined, BgColorsOutlined, AppstoreOutlined, RobotOutlined, FolderOpenOutlined, HddOutlined, SafetyCertificateOutlined, SwitcherOutlined, CodeOutlined, RightOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { PlusOutlined, ConsoleSqlOutlined, UploadOutlined, DownloadOutlined, CloudDownloadOutlined, ToolOutlined, GlobalOutlined, InfoCircleOutlined, GithubOutlined, SkinOutlined, CheckOutlined, MinusOutlined, BorderOutlined, CloseOutlined, SettingOutlined, LinkOutlined, BgColorsOutlined, AppstoreOutlined, FolderOpenOutlined, HddOutlined, SafetyCertificateOutlined, SwitcherOutlined, CodeOutlined, RightOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { BrowserOpenURL, Environment, Quit, WindowCenter, WindowFullscreen, WindowGetPosition, WindowGetSize, WindowIsFullscreen, WindowIsMaximised, WindowIsMinimised, WindowIsNormal, WindowMaximise, WindowMinimise, WindowSetPosition, WindowSetSize, WindowShow, WindowUnfullscreen, WindowUnmaximise } from '../wailsjs/runtime';
 import Sidebar from './components/Sidebar';
 import TabManager from './components/TabManager';
@@ -12,7 +12,6 @@ import DataSyncModal from './components/DataSyncModal';
 import { type DataSyncEntryMode } from './components/dataSyncEntryMode';
 import DriverManagerModal from './components/DriverManagerModal';
 import LinuxCJKFontBanner from './components/LinuxCJKFontBanner';
-import AIPanelErrorBoundary from './components/ai/AIPanelErrorBoundary';
 import SecurityUpdateBanner from './components/SecurityUpdateBanner';
 import SecurityUpdateIntroModal from './components/SecurityUpdateIntroModal';
 import SecurityUpdateProgressModal from './components/SecurityUpdateProgressModal';
@@ -62,7 +61,6 @@ import {
   bootstrapSecureConfig,
   finalizeSecurityUpdateStatus,
   mergeSecurityUpdateStatusWithLegacySource,
-  prepareSecureConfigForExternalMCP,
   startSecurityUpdateFromBootstrap,
 } from './utils/secureConfigBootstrap';
 import { bootstrapSavedQueries } from './utils/savedQueryPersistence';
@@ -112,7 +110,6 @@ import {
   readBrowserScreenWorkArea,
   resolveStartupNormalWindowBounds,
 } from './utils/windowInitialSize';
-import { DEFAULT_AI_PANEL_WIDTH, resolveOverlayAIPanelWidth, shouldOverlayAIPanel } from './utils/aiPanelLayout';
 import { safeWindowRuntimeCall } from './utils/wailsRuntime';
 import { buildTableSelectQuery } from './utils/objectQueryTemplates';
 import { useAppUpdateManager } from './hooks/useAppUpdateManager';
@@ -126,14 +123,10 @@ import {
   buildMemoryPolicyPayload,
   resolveEffectiveAppearanceValues,
   resolveMemoryPolicy,
-  shouldLoadAIAssistant,
 } from './utils/memoryPolicy';
 import './App.css';
 import './v2-theme.css';
 import './styles/v2-theme-workbench.css';
-
-const LazyAIChatPanel = lazy(() => import('./components/AIChatPanel'));
-const LazyAISettingsModal = lazy(() => import('./components/AISettingsModal'));
 
 const { Sider, Content } = Layout;
 const MIN_UI_SCALE = 0.8;
@@ -417,19 +410,10 @@ function App() {
   const [securityUpdateProgressStage, setSecurityUpdateProgressStage] = useState(() => t('app.security_update.stage.checking_saved_config'));
   const [securityUpdateRepairSource, setSecurityUpdateRepairSource] = useState<SecurityUpdateRepairSource | null>(null);
   const [focusedTabDisplayElementKey, setFocusedTabDisplayElementKey] = useState<TabDisplayElementKey | null>(null);
-  const [focusedAIProviderId, setFocusedAIProviderId] = useState<string | undefined>(undefined);
   const [connectionPackageDialog, setConnectionPackageDialog] = useState<ConnectionPackageDialogState>(() => createClosedConnectionPackageDialogState());
   const [pendingConnectionImportPayload, setPendingConnectionImportPayload] = useState<string | null>(null);
-  const [aiPanelRenderNonce, setAiPanelRenderNonce] = useState(0);
   const sidebarWidth = useStore(state => state.sidebarWidth);
   const setSidebarWidth = useStore(state => state.setSidebarWidth);
-  const aiPanelVisible = useStore(state => state.aiPanelVisible);
-  const toggleAIPanel = useStore(state => state.toggleAIPanel);
-  const setAIPanelVisible = useStore(state => state.setAIPanelVisible);
-  const aiAssistantEnabled = useMemo(
-    () => shouldLoadAIAssistant(resolveMemoryPolicy(memorySettings, appearance)),
-    [memorySettings, appearance],
-  );
   const sqlLogCount = useStore(state => state.sqlLogs.length);
   const globalProxyInvalidHintShownRef = React.useRef(false);
   const windowDiagSequenceRef = React.useRef(0);
@@ -485,14 +469,6 @@ function App() {
     const policy = resolveMemoryPolicy(memorySettings, appearance);
     void SyncMemoryPolicy(buildMemoryPolicyPayload(policy)).catch(() => undefined);
   }, [appearance, memorySettings]);
-
-  useEffect(() => {
-    if (!aiAssistantEnabled) {
-      setAIPanelVisible(false);
-      setIsAISettingsOpen(false);
-      setFocusedAIProviderId(undefined);
-    }
-  }, [aiAssistantEnabled, setAIPanelVisible]);
 
   useEffect(() => {
       let cancelled = false;
@@ -1422,51 +1398,6 @@ function App() {
   const handleStartSecurityUpdate = useCallback(() => {
       void runSecurityUpdateRound('start');
   }, [runSecurityUpdateRound]);
-  const handlePrepareExternalMCPUse = useCallback(async () => {
-      const backendApp = (window as any).go?.app?.App;
-      const result = await prepareSecureConfigForExternalMCP({
-          backend: backendApp,
-          replaceConnections,
-          replaceGlobalProxy,
-          t,
-      });
-      if (result.error) {
-          throw result.error;
-      }
-      if (!result.status) {
-          return;
-      }
-
-      const nextStatus = normalizeSecurityUpdateStatus(result.status);
-      const shouldOpenSettings = nextStatus.overallStatus === 'needs_attention' || nextStatus.overallStatus === 'rolled_back';
-      applySecurityUpdateStatus(nextStatus, {
-          openSettings: shouldOpenSettings,
-          refreshFocus: shouldOpenSettings,
-      });
-
-      if (nextStatus.overallStatus === 'completed') {
-          setSecurityUpdateHasLegacySensitiveItems(false);
-          setSecurityUpdateRawPayload(null);
-          setIsSecurityUpdateSettingsOpen(false);
-          return;
-      }
-
-      const hasConnectionIssue = nextStatus.issues.some((issue) =>
-          issue.scope === 'connection' && issue.status !== 'updated',
-      );
-      if (nextStatus.overallStatus === 'rolled_back' || hasConnectionIssue) {
-          throw new Error(t('app.security_update.message.needs_attention'));
-      }
-      if (nextStatus.overallStatus === 'needs_attention') {
-          void message.warning(t('app.security_update.message.needs_attention'));
-      }
-  }, [
-      applySecurityUpdateStatus,
-      normalizeSecurityUpdateStatus,
-      replaceConnections,
-      replaceGlobalProxy,
-      t,
-  ]);
   const handleRetrySecurityUpdate = useCallback(() => {
       void runSecurityUpdateRound('retry');
   }, [runSecurityUpdateRound]);
@@ -1521,13 +1452,6 @@ function App() {
           setIsSecurityUpdateSettingsOpen(false);
           setSecurityUpdateRepairSource(repairEntry.repairSource);
           setIsProxyModalOpen(true);
-          return;
-      }
-      if (repairEntry.type === 'ai') {
-          setIsSecurityUpdateSettingsOpen(false);
-          setSecurityUpdateRepairSource(repairEntry.repairSource);
-          setFocusedAIProviderId(repairEntry.providerId);
-          setIsAISettingsOpen(true);
           return;
       }
       if (repairEntry.type === 'retry') {
@@ -2119,19 +2043,6 @@ function App() {
   const [selectedDataRootPath, setSelectedDataRootPath] = useState('');
   const [dataRootLoading, setDataRootLoading] = useState(false);
   const [dataRootApplying, setDataRootApplying] = useState(false);
-  const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
-  const aiPanelOverlayActive = aiPanelVisible && shouldOverlayAIPanel({
-      viewportWidth,
-      sidebarWidth,
-      panelWidth: DEFAULT_AI_PANEL_WIDTH,
-  });
-  const aiPanelRenderWidth = aiPanelOverlayActive
-      ? resolveOverlayAIPanelWidth({
-          viewportWidth,
-          sidebarWidth,
-          panelWidth: DEFAULT_AI_PANEL_WIDTH,
-      })
-      : DEFAULT_AI_PANEL_WIDTH;
   const handleOpenToolsModal = useCallback((group: ToolCenterGroupKey = 'config') => {
       setToolCenterBackGroupKey(null);
       setActiveToolCenterPane(null);
@@ -2436,42 +2347,6 @@ function App() {
           Quit();
       })();
   }, []);
-
-  const handleOpenAISettings = useCallback((providerId?: string) => {
-      if (!shouldLoadAIAssistant(resolveMemoryPolicy(useStore.getState().memorySettings, useStore.getState().appearance))) {
-          return;
-      }
-      setSecurityUpdateRepairSource(null);
-      setFocusedAIProviderId(providerId);
-      setIsAISettingsOpen(true);
-  }, []);
-
-  const handleAIPanelRenderError = useCallback((error: Error, errorInfo: React.ErrorInfo) => {
-      try {
-          (window as any).__gonaviLastAIPanelRenderError = {
-              message: error?.message || '',
-              stack: error?.stack || '',
-              componentStack: errorInfo?.componentStack || '',
-          };
-      } catch {
-          // ignore debug capture failures
-      }
-      console.error('AIChatPanel render error:', error, errorInfo);
-  }, []);
-
-  const handleRetryAIPanelRender = useCallback(() => {
-      setAiPanelRenderNonce((current) => current + 1);
-  }, []);
-
-  const handleCloseAISettings = useCallback(() => {
-      const reopenSecurityUpdateDetails = shouldReopenSecurityUpdateDetails(securityUpdateRepairSource);
-      setIsAISettingsOpen(false);
-      setFocusedAIProviderId(undefined);
-      setSecurityUpdateRepairSource(null);
-      if (reopenSecurityUpdateDetails) {
-          setIsSecurityUpdateSettingsOpen(true);
-      }
-  }, [securityUpdateRepairSource]);
 
   const handleTitleBarWindowToggle = async (options?: { allowMacNativeFullscreen?: boolean }) => {
       const allowMacNativeFullscreen = options?.allowMacNativeFullscreen === true;
@@ -2850,9 +2725,6 @@ function App() {
               case 'newConnection':
                   handleCreateConnection();
                   break;
-              case 'toggleAIPanel':
-                  toggleAIPanel();
-                  break;
               case 'toggleLogPanel':
                   handleToggleLogPanel();
                   break;
@@ -2880,7 +2752,7 @@ function App() {
       return () => {
           window.removeEventListener('keydown', handleGlobalShortcut, true);
       };
-  }, [activeShortcutPlatform, activeTabId, darkMode, handleCreateConnection, handleManualResetWindowZoom, handleOpenSettingsModal, handleTitleBarWindowToggle, handleToggleLogPanel, isMacRuntime, shortcutOptions, switchActiveTabByOffset, tabs, setTheme, toggleAIPanel, useNativeMacWindowControls]);
+  }, [activeShortcutPlatform, activeTabId, darkMode, handleCreateConnection, handleManualResetWindowZoom, handleOpenSettingsModal, handleTitleBarWindowToggle, handleToggleLogPanel, isMacRuntime, shortcutOptions, switchActiveTabByOffset, tabs, setTheme, useNativeMacWindowControls]);
 
   useEffect(() => {
       if (!capturingShortcutAction) {
@@ -2903,10 +2775,7 @@ function App() {
 
           const normalizedCombo = normalizeShortcutCombo(combo);
           if (!canRecordShortcutForAction(capturingShortcutAction, normalizedCombo)) {
-              const meta = SHORTCUT_ACTION_META[capturingShortcutAction];
-              void message.warning(meta.scope === 'aiComposer'
-                  ? t('app.shortcuts.message.ai_send_limit')
-                  : t('app.shortcuts.message.modifier_required'));
+              void message.warning(t('app.shortcuts.message.modifier_required'));
               return;
           }
           const capturingScope = SHORTCUT_ACTION_META[capturingShortcutAction].scope || 'global';
@@ -3167,7 +3036,6 @@ function App() {
                             onEditConnection={handleEditConnection}
                             onOpenTools={handleOpenToolsModal}
                             onOpenSettings={handleOpenSettingsModal}
-                            onToggleAI={toggleAIPanel}
                             onToggleLogPanel={handleToggleLogPanel}
                             sqlLogCount={sqlLogCount}
                             onFocusCommandSearch={handleFocusSidebarSearch}
@@ -3253,125 +3121,6 @@ function App() {
                <div style={{ flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: bgContent }}>
                   <TabManager />
                </div>
-               {aiAssistantEnabled && aiPanelVisible && (
-                  <div
-                    className={aiPanelOverlayActive ? 'gn-v2-ai-panel-overlay' : undefined}
-                    style={aiPanelOverlayActive
-                      ? { position: 'absolute', inset: 0, display: 'flex', justifyContent: 'flex-end', pointerEvents: 'none', zIndex: 14 }
-                      : { position: 'relative', display: 'flex', flexShrink: 0, overflow: 'visible' }}
-                  >
-                      {aiPanelOverlayActive && (
-                          <button
-                            type="button"
-                            className="gn-v2-ai-panel-backdrop"
-                            aria-label={t('app.ai_panel.aria.close')}
-                            onClick={() => setAIPanelVisible(false)}
-                            style={{
-                              position: 'absolute',
-                              inset: 0,
-                              border: 0,
-                              padding: 0,
-                              background: darkMode ? 'rgba(3, 7, 18, 0.26)' : 'rgba(248, 250, 252, 0.38)',
-                              backdropFilter: 'blur(2px)',
-                              pointerEvents: 'auto',
-                            }}
-                          />
-                      )}
-                      <div
-                        className={`gn-v2-ai-panel-dock${aiPanelOverlayActive ? ' is-overlay' : ''}`}
-                        style={aiPanelOverlayActive
-                          ? {
-                              position: 'relative',
-                              display: 'flex',
-                              height: '100%',
-                              pointerEvents: 'auto',
-                              zIndex: 1,
-                              boxShadow: '0 18px 48px rgba(15, 23, 42, 0.18)',
-                            }
-                          : undefined}
-                      >
-                        <Suspense
-                          fallback={(
-                            <div
-                              style={{
-                                width: aiPanelRenderWidth,
-                                minWidth: 0,
-                                height: '100%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: bgContent,
-                              }}
-                            >
-                              <Spin />
-                            </div>
-                          )}
-                        >
-                          <AIPanelErrorBoundary
-                            key={aiPanelRenderNonce}
-                            onError={handleAIPanelRenderError}
-                            fallback={(error) => (
-                          <div
-                            style={{
-                              width: aiPanelRenderWidth,
-                              minWidth: 0,
-                              height: '100%',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              padding: 20,
-                              background: bgContent,
-                              color: darkMode ? 'rgba(255,255,255,0.88)' : '#162033',
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: '100%',
-                                maxWidth: 360,
-                                display: 'grid',
-                                gap: 12,
-                                padding: 18,
-                                borderRadius: 16,
-                                border: darkMode ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(15,23,42,0.08)',
-                                background: darkMode ? 'rgba(15,23,42,0.72)' : 'rgba(255,255,255,0.94)',
-                                boxShadow: darkMode ? '0 16px 36px rgba(0,0,0,0.32)' : '0 16px 36px rgba(15,23,42,0.12)',
-                              }}
-                            >
-                              <div style={{ fontSize: 15, fontWeight: 600 }}>{t('app.ai_panel.error.title')}</div>
-                              <div style={{ fontSize: 12, lineHeight: 1.6, color: darkMode ? 'rgba(255,255,255,0.68)' : '#526075' }}>
-                                {t('app.ai_panel.error.description')}
-                              </div>
-                              {error?.message && (
-                                <div
-                                  style={{
-                                    fontSize: 12,
-                                    lineHeight: 1.5,
-                                    wordBreak: 'break-word',
-                                    padding: '10px 12px',
-                                    borderRadius: 10,
-                                    background: darkMode ? 'rgba(2,6,23,0.7)' : 'rgba(248,250,252,0.92)',
-                                    border: darkMode ? '1px solid rgba(148,163,184,0.18)' : '1px solid rgba(148,163,184,0.22)',
-                                  }}
-                                >
-                                  {error.message}
-                                </div>
-                              )}
-                              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                                <Button aria-label={t('app.ai_panel.aria.close')} onClick={() => setAIPanelVisible(false)}>{t('app.ai_panel.action.close')}</Button>
-                                <Button type="primary" onClick={handleRetryAIPanelRender}>{t('app.ai_panel.action.reload')}</Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      >
-                        <LazyAIChatPanel width={aiPanelRenderWidth} darkMode={darkMode} bgColor={bgContent} onClose={() => setAIPanelVisible(false)} onOpenSettings={() => {
-                          handleOpenAISettings();
-                        }} overlayTheme={overlayTheme} />
-                      </AIPanelErrorBoundary>
-                        </Suspense>
-                      </div>
-                  </div>
-               )}
              </div>
           </Content>
           </Layout>
@@ -3969,16 +3718,6 @@ function App() {
                     setIsProxyModalOpen(true);
                   },
                 },
-                ...(aiAssistantEnabled ? [{
-                  key: 'ai',
-                  icon: <RobotOutlined />,
-                  title: t('app.settings.entry.ai.title'),
-                  description: t('app.settings.entry.ai.description'),
-                  onClick: () => {
-                    setIsSettingsModalOpen(false);
-                    handleOpenAISettings();
-                  },
-                }] : []),
                 {
                   key: 'about',
                   icon: <InfoCircleOutlined />,
@@ -4217,18 +3956,6 @@ function App() {
             overlayTheme={overlayTheme}
             surfaceOpacity={effectiveOpacity}
           />
-          {aiAssistantEnabled && isAISettingsOpen && (
-          <Suspense fallback={null}>
-          <LazyAISettingsModal
-            open={isAISettingsOpen}
-            onClose={handleCloseAISettings}
-            darkMode={darkMode}
-            overlayTheme={overlayTheme}
-            focusProviderId={focusedAIProviderId}
-            onBeforeExternalMCPUse={handlePrepareExternalMCPUse}
-          />
-          </Suspense>
-          )}
           <ConnectionPackagePasswordModal
             open={connectionPackageDialog.open && !(isToolsModalOpen && activeToolCenterPane?.key === 'connection-package')}
             title={connectionPackageDialog.mode === 'export'

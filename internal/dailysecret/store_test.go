@@ -66,39 +66,3 @@ func TestStorePutGetDeleteGlobalProxySecret(t *testing.T) {
 	}
 }
 
-func TestStorePutGetDeleteAIProviderSecret(t *testing.T) {
-	root := t.TempDir()
-	store := NewStore(root)
-
-	bundle := ProviderBundle{
-		APIKey: "sk-test",
-		SensitiveHeaders: map[string]string{
-			"Authorization": "Bearer test",
-		},
-	}
-	if err := store.PutAIProvider("openai-main", bundle); err != nil {
-		t.Fatalf("PutAIProvider returned error: %v", err)
-	}
-
-	got, ok, err := store.GetAIProvider("openai-main")
-	if err != nil {
-		t.Fatalf("GetAIProvider returned error: %v", err)
-	}
-	if !ok {
-		t.Fatal("expected provider bundle to exist")
-	}
-	if got.APIKey != "sk-test" || got.SensitiveHeaders["Authorization"] != "Bearer test" {
-		t.Fatalf("unexpected provider bundle: %#v", got)
-	}
-
-	if err := store.DeleteAIProvider("openai-main"); err != nil {
-		t.Fatalf("DeleteAIProvider returned error: %v", err)
-	}
-	_, ok, err = store.GetAIProvider("openai-main")
-	if err != nil {
-		t.Fatalf("GetAIProvider after delete returned error: %v", err)
-	}
-	if ok {
-		t.Fatal("expected provider bundle to be deleted")
-	}
-}

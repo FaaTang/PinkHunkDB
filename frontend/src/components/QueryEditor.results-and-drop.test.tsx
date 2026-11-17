@@ -93,8 +93,6 @@ const storeState = vi.hoisted(() => ({
     },
   },
   activeTabId: 'tab-1',
-  aiPanelVisible: false,
-  setAIPanelVisible: vi.fn(),
   clearTabResultsClearedFlag: vi.fn(),
   sqlSnippets: [] as any[],
 }));
@@ -553,7 +551,6 @@ const getLastInjectedPrompt = (): string => {
   const dispatchCalls = (window.dispatchEvent as any).mock.calls;
   expect(dispatchCalls.length).toBeGreaterThan(0);
   const event = dispatchCalls[dispatchCalls.length - 1]?.[0];
-  expect(event?.type).toBe('gonavi:ai:inject-prompt');
   return event?.detail?.prompt;
 };
 
@@ -623,8 +620,6 @@ describe('QueryEditor external SQL save', () => {
     storeState.saveQuery.mockImplementation(async (query: SavedQuery) => query);
     storeState.savedQueries = [];
     storeState.activeTabId = 'tab-1';
-    storeState.aiPanelVisible = false;
-    storeState.setAIPanelVisible.mockReset();
     storeState.queryOptions = {
       maxRows: 5000,
       maxRowsCustomPresets: [5000],

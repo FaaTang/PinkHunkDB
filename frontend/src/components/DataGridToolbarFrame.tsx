@@ -13,7 +13,6 @@ import {
   ImportOutlined,
   PlusOutlined,
   ReloadOutlined,
-  RobotOutlined,
   SaveOutlined,
   TableOutlined,
   UndoOutlined,
@@ -65,7 +64,6 @@ export interface DataGridToolbarFrameProps {  tableName?: string;
   isQueryResultExport: boolean;
   canCopyQueryResult: boolean;
   prefersManualTotalCount: boolean;
-  aiShortcutLabel: string;
   legacyAiButtonStyle?: React.CSSProperties;
   paginationTotalCountLoading?: boolean;
   toolbarExtraActions?: React.ReactNode;
@@ -96,7 +94,6 @@ export interface DataGridToolbarFrameProps {  tableName?: string;
   onPreviewChanges: () => void;
   onImport: () => void;
   onCopyQueryResultCsv: () => void;
-  onRequestAiInsight: () => void;
   onToggleTotalCount: () => void;
   onQuickWhereDraftChange: (value: string) => void;
   onQuickWhereSuggestionsOpenChange: (open: boolean) => void;
@@ -150,7 +147,6 @@ const DataGridToolbarFrame: React.FC<DataGridToolbarFrameProps> = ({  tableName
   isQueryResultExport,
   canCopyQueryResult,
   prefersManualTotalCount,
-  aiShortcutLabel,
   legacyAiButtonStyle,
   paginationTotalCountLoading,
   toolbarExtraActions,
@@ -181,7 +177,6 @@ const DataGridToolbarFrame: React.FC<DataGridToolbarFrameProps> = ({  tableName
   onPreviewChanges,
   onImport,
   onCopyQueryResultCsv,
-  onRequestAiInsight,
   onToggleTotalCount,
   onQuickWhereDraftChange,
   onQuickWhereSuggestionsOpenChange,
@@ -405,20 +400,6 @@ const DataGridToolbarFrame: React.FC<DataGridToolbarFrameProps> = ({  tableName
           </>
         )}
 
-        <>
-          {renderToolbarDivider()}
-          <Tooltip title={aiShortcutLabel !== '-'
-            ? `${translate('data_grid.toolbar.ai_insight_tooltip')} (${aiShortcutLabel})`
-            : translate('data_grid.toolbar.ai_insight_tooltip')}
-          >
-            <Button
-              className={'gn-v2-ai-insight-button'}
-              icon={<RobotOutlined />}
-              aria-label={translate('data_grid.toolbar.ai_insight_short')}
-              onClick={onRequestAiInsight}
-            />
-          </Tooltip>
-        </>
 
         {toolbarExtraActions && (
           <>

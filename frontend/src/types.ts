@@ -119,19 +119,11 @@ export interface JVMDiagnosticAuditRecord {
   status: string;
 }
 
-export interface JVMDiagnosticPlan {
-  intent: string;
-  transport: JVMDiagnosticTransport;
-  command: string;
-  riskLevel: "low" | "medium" | "high";
-  reason: string;
-  expectedSignals?: string[];
-}
 
 export interface JVMDiagnosticCommandDraft {
   sessionId?: string;
   command: string;
-  source?: "manual" | "ai-plan";
+  source?: "manual";
   reason?: string;
 }
 
@@ -257,7 +249,7 @@ export interface JVMChangeRequest {
   resourceId: string;
   action: string;
   reason: string;
-  source?: "manual" | "ai-plan";
+  source?: "manual";
   expectedVersion?: string;
   confirmationToken?: string;
   payload?: Record<string, any>;
@@ -505,18 +497,6 @@ export interface TabData {
   maxRows?: number;
 }
 
-export interface JVMAIPlanContext {
-  tabId: string;
-  connectionId: string;
-  providerMode: "jmx" | "endpoint" | "agent";
-  resourcePath: string;
-}
-
-export interface JVMDiagnosticPlanContext {
-  tabId: string;
-  connectionId: string;
-  transport: JVMDiagnosticTransport;
-}
 
 export interface DatabaseNode {
   title: string;
@@ -600,171 +580,6 @@ export interface StreamEntry {
   fields: Record<string, string>;
 }
 
-// --- AI Types ---
-
-export type AIProviderType = "openai" | "anthropic" | "gemini" | "custom";
-export type AISafetyLevel = "readonly" | "readwrite" | "full";
-export type AIContextLevel = "schema_only" | "with_samples" | "with_results";
-
-export interface AIContextItem {
-  dbName: string;
-  tableName: string;
-  ddl: string;
-}
-
-export interface AIProviderConfig {
-  id: string;
-  type: AIProviderType;
-  name: string;
-  apiKey: string;
-  secretRef?: string;
-  hasSecret?: boolean;
-  baseUrl: string;
-  model: string;
-  models?: string[];
-  apiFormat?: string; // custom 专用: openai | anthropic | gemini | cursor-agent | claude-cli | codebuddy-cli
-  headers?: Record<string, string>;
-  maxTokens: number;
-  temperature: number;
-}
-
-export interface AIUserPromptSettings {
-  global: string;
-  database: string;
-  jvm: string;
-  jvmDiagnostic: string;
-}
-
-export type AIMCPTransport = "stdio";
-
-export interface AIMCPServerConfig {
-  id: string;
-  name: string;
-  transport: AIMCPTransport;
-  command: string;
-  args?: string[];
-  env?: Record<string, string>;
-  enabled: boolean;
-  timeoutSeconds: number;
-}
-
-export interface AIMCPToolDescriptor {
-  alias: string;
-  serverId: string;
-  serverName: string;
-  originalName: string;
-  title?: string;
-  description?: string;
-  inputSchema?: Record<string, any>;
-}
-
-export interface AIMCPToolCallResult {
-  alias: string;
-  serverId: string;
-  serverName: string;
-  originalName: string;
-  title?: string;
-  content: string;
-  structuredContent?: any;
-  isError: boolean;
-}
-
-export interface AIMCPClientInstallStatus {
-  client: string;
-  displayName: string;
-  installMode?: 'auto' | 'remote';
-  installed: boolean;
-  matchesCurrent: boolean;
-  clientDetected?: boolean;
-  clientCommand?: string;
-  clientPath?: string;
-  message: string;
-  configPath?: string;
-  command?: string;
-  args?: string[];
-}
-
-export interface AIMCPHTTPServerStatus {
-  running: boolean;
-  addr: string;
-  path: string;
-  url: string;
-  schemaOnly: boolean;
-  token?: string;
-  authorizationHeader?: string;
-  startedAt?: number;
-  message: string;
-}
-
-export type AISkillScope = "global" | "database" | "jvm" | "jvmDiagnostic";
-
-export interface AISkillConfig {
-  id: string;
-  name: string;
-  description?: string;
-  systemPrompt: string;
-  enabled: boolean;
-  scopes: AISkillScope[];
-  requiredTools?: string[];
-}
-
-export interface AIToolCall {
-  id: string;
-  type: string;
-  function: {
-    name: string;
-    arguments: string;
-  };
-}
-
-export type AIChatAttachmentKind = "image" | "markdown" | "text" | "pdf" | "word" | "excel" | "document";
-
-export interface AIChatAttachment {
-  id: string;
-  name: string;
-  mimeType: string;
-  size: number;
-  kind: AIChatAttachmentKind;
-  dataUrl?: string;
-  text?: string;
-  textTruncated?: boolean;
-  extractWarning?: string;
-}
-
-export type ChatPhase =
-  | "idle"
-  | "connecting"
-  | "thinking"
-  | "generating"
-  | "tool_calling";
-
-export interface AIChatMessage {
-  id: string;
-  role: "user" | "assistant" | "system" | "tool";
-  phase?: ChatPhase;
-  content: string;
-  thinking?: string;
-  reasoning_content?: string;
-  timestamp: number;
-  loading?: boolean;
-  images?: string[]; // base64 encoded images with data URI prefix
-  attachments?: AIChatAttachment[];
-  tool_calls?: AIToolCall[];
-  tool_call_id?: string;
-  tool_name?: string; // used for UI display
-  rawError?: string; // 存储未清洗的原始错误信息，用于用户复制排查
-  success?: boolean; // 标记探针执行是否成功
-  jvmPlanContext?: JVMAIPlanContext;
-  jvmDiagnosticPlanContext?: JVMDiagnosticPlanContext;
-}
-
-export interface AISafetyResult {
-  allowed: boolean;
-  operationType: "query" | "dml" | "ddl" | "other";
-  requiresConfirm: boolean;
-  warningMessage?: string;
-}
-
 export type SecurityUpdateOverallStatus =
   | "not_detected"
   | "pending"
@@ -777,7 +592,6 @@ export type SecurityUpdateOverallStatus =
 export type SecurityUpdateIssueScope =
   | "connection"
   | "global_proxy"
-  | "ai_provider"
   | "system";
 export type SecurityUpdateIssueSeverity = "high" | "medium" | "low";
 export type SecurityUpdateItemStatus =
@@ -796,7 +610,6 @@ export type SecurityUpdateIssueReasonCode =
 export type SecurityUpdateIssueAction =
   | "open_connection"
   | "open_proxy_settings"
-  | "open_ai_settings"
   | "retry_update"
   | "view_details";
 

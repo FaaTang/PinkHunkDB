@@ -158,25 +158,19 @@ describe("LogPanel i18n", () => {
         message: "driver exploded",
       },
     ];
-    const onDiagnoseExecutionError = vi.fn();
     const onDismissExecutionError = vi.fn();
     const renderer = renderLogPanel({
       variant: "embedded",
       executionError: "Table 'missav_bot.message' doesn't exist",
-      onDiagnoseExecutionError,
       onDismissExecutionError,
     });
     const renderedText = textContent(renderer.toJSON());
 
     expect(renderedText).toContain("Execution failed");
     expect(renderedText).toContain("Table 'missav_bot.message' doesn't exist");
-    expect(renderedText).toContain("AI diagnose");
 
-    const diagnoseButton = renderer.root.findAll((node) => node.type === "button" && textContent(node).includes("AI diagnose"))[0];
     act(() => {
-      diagnoseButton.props.onClick?.();
     });
-    expect(onDiagnoseExecutionError).toHaveBeenCalledTimes(1);
   });
 
   it("dismisses the embedded execution error from the card close button", () => {

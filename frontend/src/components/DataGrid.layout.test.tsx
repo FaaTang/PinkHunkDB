@@ -78,8 +78,6 @@ vi.mock('../store', () => ({
     clearTableHiddenColumns: vi.fn(),
     shortcutOptions: cloneShortcutOptions(DEFAULT_SHORTCUT_OPTIONS),
     languagePreference: mockStoreState.languagePreference,
-    aiPanelVisible: false,
-    setAIPanelVisible: vi.fn(),
   }),
 }));
 
@@ -1056,8 +1054,6 @@ describe('DataGrid layout', () => {
       'data_grid.toolbar.import',
       'data_grid.toolbar.export',
       'data_grid.toolbar.copy',
-      'data_grid.toolbar.ai_insight_short',
-      'data_grid.toolbar.ai_insight_tooltip',
       'data_grid.toolbar.cancel_count',
       'data_grid.toolbar.cancel_count_tooltip',
       'data_grid.toolbar.count_total',
@@ -1108,9 +1104,6 @@ describe('DataGrid layout', () => {
       '回滚',
       '导入',
       '导出',
-      '一键借助 AI 智能分析当前查询页数据',
-      'AI 洞察',
-      'AI 数据洞察',
       '取消本次精确总数统计（不会影响当前浏览）',
       '按当前筛选统计精确总数',
       '取消统计',
@@ -1851,14 +1844,12 @@ describe('DataGrid layout', () => {
     expect(markup).toContain('gn-v2-data-grid-toolbar-title');
     expect(markup).toContain('gn-v2-toolbar-divider');
     expect(markup).toContain('gn-v2-commit-button');
-    expect(markup).toContain('gn-v2-ai-insight-button');
     expect(markup).toContain('gn-v2-smart-filter-panel');
     expect(markup).toContain('gn-v2-data-grid-table-shell');
     expect(markup).toContain('gn-v2-data-grid-table-wrap');
     expect(markup).toContain('· main');
     expect(markup).toContain('提交事务');
     expect(markup).toContain('手动提交');
-    expect(markup).toContain('AI 洞察');
   });
 
   it('renders a non-data row number column when enabled', () => {

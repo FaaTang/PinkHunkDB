@@ -37,15 +37,11 @@ jobs:
       fail-fast: false
       matrix:
         image_name:
-          - gonavi-mcp-server
           - pinkhunkdb-build-env
         platform:
           - linux/amd64
           - linux/arm64
         include:
-          - image_name: gonavi-mcp-server
-            dockerfile: Dockerfile.mcp-server
-            description: GoNavi MCP Server container image
           - image_name: pinkhunkdb-build-env
             dockerfile: Dockerfile.build-env
             description: GoNavi Linux build environment image
@@ -94,22 +90,6 @@ jobs:
           tags: codex-smoke/${{ matrix.image_name }}:local
           cache-from: type=gha,scope=${{ matrix.image_name }}-${{ steps.prep.outputs.platform_pair }}
 
-      - name: Smoke test MCP Server image
-        if: matrix.image_name == 'gonavi-mcp-server'
-        shell: bash
-        run: |
-          set -euo pipefail
-          cid="$(docker run -d -p 8765:8765 -e GONAVI_MCP_HTTP_TOKEN=smoke-token codex-smoke/${{ matrix.image_name }}:local http)"
-          trap 'docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
-          for _ in 1 2 3 4 5 6 7 8 9 10; do
-            if curl --fail --silent http://127.0.0.1:8765/healthz >/dev/null; then
-              exit 0
-            fi
-            sleep 1
-          done
-          docker logs "$cid"
-          echo "MCP Server image smoke test failed" >&2
-          exit 1
 
       - name: Smoke test build environment image
         if: matrix.image_name == 'pinkhunkdb-build-env'
@@ -159,7 +139,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image_name: gonavi-mcp-server
             description: GoNavi MCP Server container image
           - image_name: pinkhunkdb-build-env
             description: GoNavi Linux build environment image

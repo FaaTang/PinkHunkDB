@@ -61,8 +61,6 @@ const storeState = vi.hoisted(() => ({
   setTableHiddenColumns: vi.fn(),
   setEnableHiddenColumnMemory: vi.fn(),
   clearTableHiddenColumns: vi.fn(),
-  aiPanelVisible: false,
-  setAIPanelVisible: vi.fn(),
 }));
 
 const backendApp = vi.hoisted(() => ({
@@ -791,14 +789,6 @@ describe('DataGrid commit change set', () => {
 
     expect(dataGridSource).not.toContain('>此刻</a>');
     expect(dataGridSource).toContain('data_grid.datetime_picker.now');
-  });
-
-  it('keeps DataGrid AI insight prompt wrapper localized', () => {
-    const dataGridSource = readFileSync(new URL('./DataGrid.tsx', import.meta.url), 'utf8');
-    const dataGridShellSource = readFileSync(new URL('./DataGridShell.tsx', import.meta.url), 'utf8');
-
-    expect(`${dataGridSource}\n${dataGridShellSource}`).not.toMatch(/请帮我分析以下查询结果数据|请分析数据特征|业务上的洞察/);
-    expect(dataGridShellSource).toContain('data_grid.ai_insight.prompt');
   });
 
   it('marks the active virtual editing row so shouldCellUpdate can reopen inline editors', () => {

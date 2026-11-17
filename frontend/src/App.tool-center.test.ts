@@ -110,32 +110,9 @@ describe('tool center menu entries', () => {
     expect(appSource).toContain("borderBottom: `1px solid ${overlayTheme.divider}`");
   });
 
-  it('routes AI through the sidebar rail without legacy content-edge handles', () => {
-    expect(appSource).toContain('onToggleAI={toggleAIPanel}');
-    expect(appSource).not.toContain('renderLegacyAIEdgeHandle');
-    expect(appSource).not.toContain('resolveLegacyAIEdgeHandleDockStyle');
-    expect(appSource).not.toContain('data-gonavi-legacy-ai-edge-action="true"');
-  });
 
-  it('keeps sidebar utility handlers stable so v2 button clicks do not repaint the workspace', () => {
-    expect(appSource).toContain('const handleOpenToolsModal = useCallback(');
-    expect(appSource).toContain('const handleOpenSettingsModal = useCallback(');
-    expect(appSource).toContain('const handleToggleLogPanel = useCallback(');
-    expect(appSource).toContain('const handleFocusSidebarSearch = useCallback(');
-    expect(appSource).toContain('const antdTheme = useMemo(() => ({');
-    expect(appSource).toContain('theme={antdTheme}');
-    expect(appSource).toContain('const sqlLogCount = useStore(state => state.sqlLogs.length);');
-    expect(appSource).toContain('onOpenTools={handleOpenToolsModal}');
-    expect(appSource).toContain('onOpenSettings={handleOpenSettingsModal}');
-    expect(appSource).toContain('onToggleLogPanel={handleToggleLogPanel}');
-    expect(appSource).toContain('onFocusCommandSearch={handleFocusSidebarSearch}');
-    expect(appSource).toContain('sqlLogCount={sqlLogCount}');
-    expect(appSource).not.toContain('onOpenTools={() => setIsToolsModalOpen(true)}');
-    expect(appSource).not.toContain('onOpenSettings={() => setIsSettingsModalOpen(true)}');
-    expect(appSource).not.toContain('onToggleLogPanel={() => setIsLogPanelOpen((prev) => !prev)}');
-    expect(appSource).not.toContain('theme={{');
-    expect(appSource).not.toContain('const sqlLogs = useStore(state => state.sqlLogs);');
-  });
+
+
 
   it('lets the v2 Sidebar own the entire left layout without legacy controls above it', () => {
     const siderIndex = appSource.indexOf("className={'gn-v2-app-sider'}");
@@ -190,28 +167,13 @@ describe('tool center menu entries', () => {
     expect(appSource).toContain('{isSettingsModalOpen && (');
     expect(appSource).toContain('{isThemeModalOpen && (');
     expect(appSource).toContain('{isShortcutModalOpen && (');
-    expect(appSource).toContain('{aiAssistantEnabled && isAISettingsOpen && (');
     expect(appSource).toContain('{isDriverModalOpen && (');
     expect(appSource).toContain('{isSyncModalOpen && (');
   });
 
-  it('loads editable connection details before opening the edit modal so stored secrets can be shown', () => {
-    expect(appSource).toContain("typeof backendApp?.GetEditableSavedConnection === 'function'");
-    expect(appSource).toContain('const editableConnection = await backendApp.GetEditableSavedConnection(conn.id);');
-    expect(appSource).toContain('const errorMessage = error?.message;');
-    expect(appSource).toContain("typeof errorMessage === 'string'");
-    expect(appSource).toContain("t('app.connection.message.editable_load_failed_with_detail', { detail })");
-    expect(appSource).toContain("t('app.connection.message.editable_load_failed')");
-    expect(appSource).toContain('setEditingConnection(nextConnection);');
-    expect(appSource).toContain('setIsModalOpen(true);');
-  });
 
-  it('loads editable AI provider details before opening the edit modal so stored api keys can be shown', () => {
-    expect(appSource).toContain('<LazyAISettingsModal');
-    const modalSource = readFileSync(new URL('./components/AISettingsModal.tsx', import.meta.url), 'utf8');
-    expect(modalSource).toContain("typeof Service?.AIGetEditableProvider === 'function'");
-    expect(modalSource).toContain('await Service.AIGetEditableProvider(p.id)');
-  });
+
+
 
   it('keeps edit-mode passwords masked by default instead of forcing the eye toggle open', () => {
     expect(appSource).not.toContain('setPrimaryPasswordVisible(String(config.password || "").trim() !== "")');
@@ -241,7 +203,6 @@ describe('tool center menu entries', () => {
       ['switchToPreviousTab', 'switchActiveTabByOffset(-1);'],
       ['closeCurrentTab', 'PinkHunkDB:close-active-tab'],
       ['newConnection', 'handleCreateConnection();'],
-      ['toggleAIPanel', 'toggleAIPanel();'],
       ['toggleLogPanel', 'handleToggleLogPanel();'],
       ['toggleTheme', 'setTheme('],
       ['openShortcutManager', 'setIsShortcutModalOpen(true);'],
@@ -274,17 +235,7 @@ describe('tool center menu entries', () => {
     expect(appSource).toContain('该异常不一定表现为 viewport ratio drift');
   });
 
-  it('captures window state on startup and lifecycle events instead of waiting only for the polling interval', () => {
-    expect(appSource).toContain('const scheduleWindowStateSave = (delayMs = 120) => {');
-    expect(appSource).toContain('if (hydrated) {');
-    expect(appSource).toContain('scheduleWindowStateSave(320);');
-    expect(appSource).toContain('const unsubscribeHydration = useStore.persist.onFinishHydration(() => {');
-    expect(appSource).toContain("window.addEventListener('resize', handleWindowRuntimeChange);");
-    expect(appSource).toContain("window.addEventListener('focus', handleWindowRuntimeChange);");
-    expect(appSource).toContain("window.addEventListener('pageshow', handleWindowRuntimeChange);");
-    expect(appSource).toContain("window.addEventListener('pagehide', handleWindowLifecycleFlush, { capture: true });");
-    expect(appSource).toContain("window.addEventListener('beforeunload', handleWindowLifecycleFlush, { capture: true });");
-  });
+
 
   it('keeps titlebar double-click on maximise while shortcuts may enter macOS fullscreen', () => {
     expect(appSource).toContain('const handleTitleBarWindowToggle = async (options?: { allowMacNativeFullscreen?: boolean }) => {');

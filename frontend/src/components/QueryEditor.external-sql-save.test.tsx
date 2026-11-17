@@ -95,8 +95,6 @@ const storeState = vi.hoisted(() => ({
     },
   },
   activeTabId: 'tab-1',
-  aiPanelVisible: false,
-  setAIPanelVisible: vi.fn(),
   clearTabResultsClearedFlag: vi.fn(),
   sqlSnippets: [] as any[],
 }));
@@ -400,7 +398,6 @@ vi.mock('./LogPanel', () => ({
           ) : null}
         </div>
       ))}
-      {onDiagnoseExecutionError ? <button onClick={onDiagnoseExecutionError}>AI diagnose</button> : null}
     </div>
   ),
 }));
@@ -580,14 +577,6 @@ const createSqlCompletionModel = (line: string, word: string) => ({
   getLineContent: () => line,
 });
 
-const getLastInjectedPrompt = (): string => {
-  const dispatchCalls = (window.dispatchEvent as any).mock.calls;
-  expect(dispatchCalls.length).toBeGreaterThan(0);
-  const event = dispatchCalls[dispatchCalls.length - 1]?.[0];
-  expect(event?.type).toBe('gonavi:ai:inject-prompt');
-  return event?.detail?.prompt;
-};
-
 const createTab = (overrides: Partial<TabData> = {}): TabData => ({
   id: 'tab-1',
   title: 'query.sql',
@@ -654,8 +643,6 @@ describe('QueryEditor external SQL save', () => {
     storeState.saveQuery.mockImplementation(async (query: SavedQuery) => query);
     storeState.savedQueries = [];
     storeState.activeTabId = 'tab-1';
-    storeState.aiPanelVisible = false;
-    storeState.setAIPanelVisible.mockReset();
     storeState.queryOptions = {
       maxRows: 5000,
       maxRowsCustomPresets: [5000],
@@ -2332,128 +2319,6 @@ storeState.queryOptions.showQueryResultsPanel = false;
     });
   });
 
-  it('refreshes AI context-menu labels when languagePreference changes after mount', async () => {
-    storeState.aiPanelVisible = true;
-
-    await act(async () => {
-      create(<QueryEditor tab={createTab({ dbName: 'analytics' })} />);
-    });
-
-    expect(findEditorAction('ai.generateSQL')).toMatchObject({
-      label: 'AI 生成 SQL',
-    });
-    expect(findEditorAction('ai.explainSQL')).toMatchObject({
-      label: 'AI 解释 SQL',
-    });
-    expect(findEditorAction('ai.optimizeSQL')).toMatchObject({
-      label: 'AI 优化 SQL',
-    });
-
-    await act(async () => {
-      storeState.languagePreference = 'en-US';
-      setCurrentLanguage('en-US');
-      notifyStoreSubscribers();
-    });
-
-    expect(findEditorActionLabels('ai.generateSQL')).toContain('AI Generate SQL');
-    expect(findEditorActionLabels('ai.explainSQL')).toContain('AI Explain SQL');
-    expect(findEditorActionLabels('ai.optimizeSQL')).toContain('AI Optimize SQL');
-    expect(findEditorAction('ai.generateSQL')).toMatchObject({
-      label: 'AI Generate SQL',
-    });
-    expect(findEditorAction('ai.explainSQL')).toMatchObject({
-      label: 'AI Explain SQL',
-    });
-    expect(findEditorAction('ai.optimizeSQL')).toMatchObject({
-      label: 'AI Optimize SQL',
-    });
-
-    await act(async () => {
-      await findEditorAction('ai.generateSQL').run({
-        getModel: () => ({ getValueInRange: () => '' }),
-        getSelection: () => null,
-      });
-    });
-
-    expect(getLastInjectedPrompt()).toBe(
-      'Context: mysql "local", selected database "analytics".\nGenerate a query based on the current database schema.',
-    );
-  });
-
-  it('refreshes slash command labels descriptions and prompt seeds when languagePreference changes after mount', async () => {
-    vi.useFakeTimers();
-    try {
-      storeState.aiPanelVisible = true;
-
-      await act(async () => {
-        create(<QueryEditor tab={createTab({ dbName: 'main', query: 'select 1;' })} />);
-      });
-
-      const slashProvider = editorState.providers.find((provider: any) =>
-        Array.isArray(provider?.triggerCharacters) && provider.triggerCharacters.includes('/'),
-      );
-      expect(slashProvider).toBeTruthy();
-
-      await act(async () => {
-        storeState.languagePreference = 'en-US';
-        setCurrentLanguage('en-US');
-        notifyStoreSubscribers();
-      });
-
-      const completionItems = await slashProvider.provideCompletionItems(
-        {
-          getLineContent: () => '/',
-        },
-        { lineNumber: 1, column: 2 },
-      );
-
-      expect(completionItems.suggestions).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            label: '/query  🔍 Natural language query',
-            detail: 'Describe what you want to query',
-          }),
-          expect.objectContaining({
-            label: '/schema  🏗️ Table design review',
-            detail: 'Review table structure design quality',
-          }),
-        ]),
-      );
-
-      const slashCmdDefs = (window as any).__gonaviSlashCmdDefs;
-      expect(slashCmdDefs).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            cmd: '/sql',
-            label: '📝 Generate SQL',
-            desc: 'Describe the requirement and generate a statement',
-            prompt: 'Generate SQL for this requirement:',
-          }),
-          expect.objectContaining({
-            cmd: '/explain',
-            label: '💡 Explain SQL',
-            desc: 'Explain the selected SQL logic',
-            prompt: 'Explain the execution logic of this SQL statement:\n```sql\n{SQL}\n```',
-          }),
-        ]),
-      );
-
-      editorState.value = '__AI_SQL__\nselect 1;';
-      await act(async () => {
-        editorState.contentChangeListeners.forEach((listener) => (listener as any)({
-          changes: [{ text: '__AI_SQL__' }],
-        }));
-        vi.runAllTimers();
-      });
-
-      expect(getLastInjectedPrompt()).toBe(
-        'Context: mysql "local", selected database "main".\nGenerate SQL for this requirement:',
-      );
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
   it('shows "No selectable SQL statement." in English when selecting the current statement without selectable SQL', async () => {
     storeState.languagePreference = 'en-US';
     setCurrentLanguage('en-US');
@@ -2532,241 +2397,6 @@ storeState.queryOptions.showQueryResultsPanel = false;
     expect(messageApi.info).not.toHaveBeenCalledWith(expect.objectContaining({
       content: '当前光标未定位到可识别的表或字段。',
     }));
-  });
-
-  it('localizes AI context menu labels in English', async () => {
-    storeState.languagePreference = 'en-US';
-    setCurrentLanguage('en-US');
-
-    await act(async () => {
-      create(<QueryEditor tab={createTab()} />);
-    });
-
-    expect(findEditorAction('ai.generateSQL')).toMatchObject({
-      label: 'AI Generate SQL',
-    });
-    expect(findEditorAction('ai.explainSQL')).toMatchObject({
-      label: 'AI Explain SQL',
-    });
-    expect(findEditorAction('ai.optimizeSQL')).toMatchObject({
-      label: 'AI Optimize SQL',
-    });
-
-    expect(findEditorActionLabels('ai.generateSQL')).not.toContain('🤖 AI 生成 SQL');
-    expect(findEditorActionLabels('ai.explainSQL')).not.toContain('🤖 AI 解释 SQL');
-    expect(findEditorActionLabels('ai.optimizeSQL')).not.toContain('🤖 AI 优化 SQL');
-  });
-
-  it('builds localized AI context prefix for QueryEditor prompt injection', async () => {
-    storeState.languagePreference = 'en-US';
-    storeState.aiPanelVisible = true;
-    setCurrentLanguage('en-US');
-
-    await act(async () => {
-      create(<QueryEditor tab={createTab({ dbName: 'analytics' })} />);
-    });
-
-    const generateAction = findEditorAction('ai.generateSQL');
-
-    await act(async () => {
-      await generateAction.run({
-        getModel: () => ({ getValueInRange: () => '' }),
-        getSelection: () => null,
-      });
-    });
-
-    expect(getLastInjectedPrompt()).toBe(
-      'Context: mysql "local", selected database "analytics".\nGenerate a query based on the current database schema.',
-    );
-    expect(getLastInjectedPrompt()).not.toContain('上下文环境：');
-    expect(getLastInjectedPrompt()).toContain('"local"');
-    expect(getLastInjectedPrompt()).toContain('"analytics"');
-  });
-
-  it('injects localized context-menu AI prompts for generate explain and optimize actions', async () => {
-    storeState.languagePreference = 'en-US';
-    storeState.aiPanelVisible = true;
-    setCurrentLanguage('en-US');
-
-    await act(async () => {
-      create(<QueryEditor tab={createTab({ dbName: 'main' })} />);
-    });
-
-    const selection = 'select * from users';
-    const actionEditor = {
-      getModel: () => ({ getValueInRange: () => selection }),
-      getSelection: () => ({
-        startLineNumber: 1,
-        startColumn: 1,
-        endLineNumber: 1,
-        endColumn: selection.length + 1,
-      }),
-    };
-
-    await act(async () => {
-      await findEditorAction('ai.generateSQL').run(actionEditor);
-    });
-    expect(getLastInjectedPrompt()).toBe(
-      'Context: mysql "local", selected database "main".\nGenerate a query based on the current database schema.',
-    );
-
-    await act(async () => {
-      await findEditorAction('ai.explainSQL').run(actionEditor);
-    });
-    expect(getLastInjectedPrompt()).toBe(
-      'Context: mysql "local", selected database "main".\nExplain the execution logic of this SQL statement:\n```sql\nselect * from users\n```',
-    );
-    expect(getLastInjectedPrompt()).not.toContain('请解释以下 SQL');
-
-    await act(async () => {
-      await findEditorAction('ai.optimizeSQL').run(actionEditor);
-    });
-    expect(getLastInjectedPrompt()).toBe(
-      'Context: mysql "local", selected database "main".\nAnalyze this SQL statement for performance issues and suggest optimizations:\n```sql\nselect * from users\n```',
-    );
-    expect(getLastInjectedPrompt()).not.toContain('请分析以下 SQL');
-  });
-
-  it('renders localized slash command completion labels descriptions and prompt seeds', async () => {
-    storeState.languagePreference = 'en-US';
-    setCurrentLanguage('en-US');
-
-    await act(async () => {
-      create(<QueryEditor tab={createTab()} />);
-    });
-
-    const slashProvider = editorState.providers.find((provider: any) =>
-      Array.isArray(provider?.triggerCharacters) && provider.triggerCharacters.includes('/'),
-    );
-    expect(slashProvider).toBeTruthy();
-
-    const completionItems = await slashProvider.provideCompletionItems(
-      {
-        getLineContent: () => '/',
-      },
-      { lineNumber: 1, column: 2 },
-    );
-
-    expect(completionItems.suggestions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          label: '/query  🔍 Natural language query',
-          detail: 'Describe what you want to query',
-        }),
-        expect.objectContaining({
-          label: '/schema  🏗️ Table design review',
-          detail: 'Review table structure design quality',
-        }),
-      ]),
-    );
-
-    const slashCmdDefs = (window as any).__gonaviSlashCmdDefs;
-    expect(slashCmdDefs).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          cmd: '/sql',
-          label: '📝 Generate SQL',
-          desc: 'Describe the requirement and generate a statement',
-          prompt: 'Generate SQL for this requirement:',
-        }),
-        expect.objectContaining({
-          cmd: '/explain',
-          label: '💡 Explain SQL',
-          desc: 'Explain the selected SQL logic',
-          prompt: 'Explain the execution logic of this SQL statement:\n```sql\n{SQL}\n```',
-        }),
-      ]),
-    );
-    expect(JSON.stringify(slashCmdDefs)).not.toContain('自然语言查询');
-    expect(JSON.stringify(slashCmdDefs)).not.toContain('请根据以下需求生成 SQL：');
-  });
-
-  it('replaces slash markers and injects the localized prompt', async () => {
-    vi.useFakeTimers();
-    try {
-      storeState.languagePreference = 'en-US';
-      storeState.aiPanelVisible = true;
-      setCurrentLanguage('en-US');
-
-      await act(async () => {
-        create(<QueryEditor tab={createTab({ dbName: 'analytics', query: 'select 1;' })} />);
-      });
-      editorState.value = '__AI_SQL__\nselect 1;';
-
-      await act(async () => {
-        editorState.contentChangeListeners.forEach((listener) => (listener as any)({
-          changes: [{ text: '__AI_SQL__' }],
-        }));
-        vi.runAllTimers();
-      });
-
-      expect(editorState.value).toBe('select 1;');
-      expect(getLastInjectedPrompt()).toBe(
-        'Context: mysql "local", selected database "analytics".\nGenerate SQL for this requirement:',
-      );
-      expect(getLastInjectedPrompt()).not.toContain('请根据以下需求生成 SQL：');
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('uses localized toolbar AI prompts and execution-error diagnose prompt', async () => {
-    vi.useFakeTimers();
-    try {
-      storeState.aiPanelVisible = true;
-let renderer!: ReactTestRenderer;
-      await act(async () => {
-        renderer = create(<QueryEditor tab={createTab({ dbName: 'main', query: 'select 1;' })} />);
-      });
-
-      await act(async () => {
-        storeState.languagePreference = 'en-US';
-        setCurrentLanguage('en-US');
-        notifyStoreSubscribers();
-      });
-
-      await act(async () => {
-        findExactButton(renderer, 'Schema analysis').props.onClick();
-      });
-      expect(getLastInjectedPrompt()).toBe(
-        'Context: mysql "local", selected database "main".\nAnalyze the current database schema and suggest performance and design improvements.',
-      );
-      expect(getLastInjectedPrompt()).not.toContain('请针对当前数据库的表结构进行系统分析');
-
-      backendApp.DBQueryMulti.mockResolvedValueOnce({ success: false, message: 'driver exploded', data: [] });
-      editorState.selection = {
-        startLineNumber: 1,
-        startColumn: 1,
-        endLineNumber: 1,
-        endColumn: 'select 1;'.length + 1,
-        positionLineNumber: 1,
-        positionColumn: 'select 1;'.length + 1,
-      };
-
-      await act(async () => {
-        const runButton = findButton(renderer, 'Run');
-        runButton.props.onMouseDown?.({ preventDefault: vi.fn() });
-        await runButton.props.onClick();
-      });
-      await act(async () => {
-        await Promise.resolve();
-        await Promise.resolve();
-      });
-
-      expect(textContent(renderer.toJSON())).toContain('SQL 执行日志');
-
-      await act(async () => {
-        findButton(renderer, 'AI diagnose').props.onClick();
-        vi.runAllTimers();
-      });
-
-      expect(getLastInjectedPrompt()).toBe(
-        `I got an error while executing this SQL:\n\`\`\`sql\nselect 1;\n\`\`\`\n\nThe database returned this error:\n\`\`\`text\n${formatSqlExecutionError('driver exploded')}\n\`\`\`\n\nAnalyze the cause and suggest a fix.`,
-      );
-      expect(getLastInjectedPrompt()).not.toContain('我在执行以下 SQL 时遇到了错误');
-    } finally {
-      vi.useRealTimers();
-    }
   });
 
   it('adds separate object and column color decorations', async () => {

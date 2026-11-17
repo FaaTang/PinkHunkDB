@@ -201,15 +201,12 @@ vi.mock('../store', () => ({
     addSqlLog: mocks.noop,
     sqlLogs: [],
     shortcutOptions: mocks.state.shortcutOptions ?? cloneShortcutOptions(DEFAULT_SHORTCUT_OPTIONS),
-    setAIPanelVisible: mocks.noop,
-    addAIContext: mocks.noop,
     memorySettings: {
       lowMemoryMode: false,
       advanced: {
         destroyInactiveTabs: false,
         sidebarDbCacheLimit: 12,
         runtimeSqlLogLimit: 200,
-        aiMessageMemoryLimit: 80,
         sidebarIdleReleaseMinutes: 0,
         goGCPercent: 100,
       },
@@ -1062,24 +1059,11 @@ describe('Sidebar locate toolbar', () => {
     ]);
   });
 
-  it('keeps the v2 command search footer hints tied to real prefix actions', () => {
-    const source = readSidebarSource();
-
-    expect(source).toContain("const v2CommandSearchObjectMode = v2CommandSearchQuery.mode === 'object';");
-    expect(source).toContain("const v2CommandSearchAiMode = v2CommandSearchQuery.mode === 'ai';");
-    expect(source).toContain("key: 'action-ask-ai'");
-    expect(source).toContain("window.dispatchEvent(new CustomEvent('gonavi:ai:inject-prompt'");
-    expect(source).toContain("<TableOutlined /> <kbd>@</kbd>{t('sidebar.command_search.footer.object_only')}");
-    expect(source).toContain("<RobotOutlined /> <kbd>?</kbd>{t('sidebar.command_search.footer.ask_ai')}");
-    expect(source).not.toContain('提示 · 以「@」开头按表名搜索，以「?」开头让 AI 回答');
-  });
-
   it('renders v2 command action shortcuts from the shared shortcut options', () => {
     const source = readSidebarSource();
 
     expect(source).toContain("shortcut: resolveShortcutDisplay(shortcutOptions, 'sidebarNewQuery', activeShortcutPlatform)");
     expect(source).toContain("shortcut: resolveShortcutDisplay(shortcutOptions, 'newConnection', activeShortcutPlatform)");
-    expect(source).toContain("shortcut: resolveShortcutDisplay(shortcutOptions, 'toggleAIPanel', activeShortcutPlatform)");
     expect(source).toContain("shortcut: resolveShortcutDisplay(shortcutOptions, 'toggleLogPanel', activeShortcutPlatform)");
     expect(source).not.toContain("shortcut: '⌘N'");
     expect(source).not.toContain("shortcut: '⌘⇧N'");
@@ -1694,7 +1678,6 @@ describe('Sidebar locate toolbar', () => {
     expect(markup).not.toContain('JSON · .json');
     expect(markup).not.toContain('Markdown · .md');
     expect(markup).not.toContain('HTML · .html');
-    expect(markup).toContain('用 AI 解释这张表');
     expect(markup).toContain('用 AI 生成查询');
     expect(markup).toContain('截断表 · TRUNCATE');
     expect(markup).toContain('删除表 · DROP');
@@ -1834,22 +1817,6 @@ describe('Sidebar locate toolbar', () => {
     expect(exportSource).toContain("{ action: 'export-data'");
     expect(exportSource).not.toContain('导出表数据');
     expect(exportSource).not.toContain("'打开导出工作台…'");
-    expect(exportSource).not.toContain('用 AI 解释这张表');
-  });
-
-  it('localizes only the v2 table context menu ai block via focused i18n keys', () => {
-    const source = readFileSync(new URL('./V2TableContextMenu.tsx', import.meta.url), 'utf8');
-    const aiSourceStart = source.indexOf("{ action: 'ai-explain'");
-    const aiSourceEnd = source.indexOf('<div className="gn-v2-context-menu-divider" />', aiSourceStart);
-    const aiSource = source.slice(aiSourceStart, aiSourceEnd);
-
-    expect(aiSourceStart).toBeGreaterThanOrEqual(0);
-    expect(aiSourceEnd).toBeGreaterThan(aiSourceStart);
-    expect(aiSource).toContain("t('sidebar.v2_table_menu.ai_explain_table')");
-    expect(aiSource).toContain("t('sidebar.v2_table_menu.ai_generate_query')");
-    expect(aiSource).not.toContain('用 AI 解释这张表');
-    expect(aiSource).not.toContain('用 AI 生成查询');
-    expect(aiSource).not.toContain('截断表 · TRUNCATE');
   });
 
   it('localizes only the v2 table context menu danger block via focused i18n keys', () => {
@@ -2129,19 +2096,6 @@ describe('Sidebar locate toolbar', () => {
     expect(markup).not.toContain('CSV · .csv');
     expect(markup).not.toContain('JSON · .json');
     expect(markup).not.toContain('导出表数据');
-  });
-
-  it('localizes v2 table context menu ai block in english', () => {
-    setCurrentLanguage('en-US');
-
-    const markup = renderToStaticMarkup(
-      <V2TableContextMenuView tableName="t1" />,
-    );
-
-    expect(markup).toContain('Use AI to explain this table');
-    expect(markup).toContain('Use AI to generate a query');
-    expect(markup).not.toContain('用 AI 解释这张表');
-    expect(markup).not.toContain('用 AI 生成查询');
   });
 
   it('localizes v2 table context menu danger block in english while keeping raw truncate and drop', () => {

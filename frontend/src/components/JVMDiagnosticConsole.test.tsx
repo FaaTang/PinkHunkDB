@@ -507,7 +507,7 @@ describe("JVMDiagnosticConsole", () => {
     expect(zhMarkup).toContain("输入 Arthas/诊断命令，例如 thread -n 5、dashboard、jvm；也可以从下方模板一键回填。");
     expect(zhMarkup).toContain("诊断原因（可选）");
     expect(zhMarkup).toContain("例如：排查 CPU 飙高、确认线程阻塞、定位慢方法");
-    expect(zhMarkup).toContain("用于审计记录和 AI 上下文理解，不会作为 Arthas 命令发送到目标 JVM。");
+    expect(zhMarkup).toContain("用于审计记录，不会作为 Arthas 命令发送到目标 JVM。");
     expect(zhMarkup).toContain("命令模板");
 
     expect(enMarkup).toContain("Command input");
@@ -516,7 +516,7 @@ describe("JVMDiagnosticConsole", () => {
     expect(enMarkup).toContain("Enter an Arthas/diagnostic command, for example thread -n 5, dashboard, or jvm; templates below can fill this in with one click.");
     expect(enMarkup).toContain("Reason (optional)");
     expect(enMarkup).toContain("For example: investigate high CPU, confirm blocked threads, or locate a slow method");
-    expect(enMarkup).toContain("Used for audit records and AI context. It is not sent to the target JVM as an Arthas command.");
+    expect(enMarkup).toContain("Used for audit records. It is not sent to the target JVM as an Arthas command.");
     expect(enMarkup).toContain("Command templates");
     expect(enMarkup).not.toContain("诊断原因（可选）");
     expect(enMarkup).not.toContain("命令模板");
@@ -649,118 +649,6 @@ describe("JVMDiagnosticConsole", () => {
     expect(JSON.stringify(appendedChunks)).toContain("thread -n 5");
     expect(JSON.stringify(appendedChunks)).not.toContain("已提交诊断命令");
     expect(JSON.stringify(appendedChunks)).not.toContain("诊断命令调用已返回");
-  });
-
-  it("localizes unavailable execute/cancel fallbacks and AI plan messages without translating raw transports", async () => {
-    const renderer = await createConsoleWithLanguage("en-US", {
-      ...baseState,
-      jvmDiagnosticDrafts: {
-        "tab-1": {
-          sessionId: "session-1",
-          command: "thread -n 5",
-        },
-      },
-    });
-
-    await act(async () => {
-      registeredApplyDiagnosticPlanHandler({
-        detail: {
-          targetTabId: "tab-1",
-          plan: {
-            transport: "arthas-tunnel",
-            command: "dashboard",
-            reason: "raw AI reason",
-          },
-        },
-      });
-    });
-    const mismatchJson = JSON.stringify(renderer.toJSON());
-    expect(mismatchJson).toContain(
-      "The AI plan diagnostic transport is arthas-tunnel, which does not match the current console agent-bridge. Regenerate the plan before applying it.",
-    );
-    expect(mismatchJson).toContain("arthas-tunnel");
-    expect(mismatchJson).toContain("agent-bridge");
-    expect(mismatchJson).not.toContain("AI 计划的诊断 transport");
-
-    await act(async () => {
-      registeredApplyDiagnosticPlanHandler({
-        detail: {
-          targetTabId: "tab-1",
-          plan: {
-            transport: "agent-bridge",
-            command: "dashboard",
-            reason: "raw AI reason",
-          },
-        },
-      });
-    });
-    expect(message.success).toHaveBeenCalledWith(
-      "AI diagnostic plan filled into the console",
-    );
-    expect(mockState.setJVMDiagnosticDraft).toHaveBeenCalledWith("tab-1", {
-      command: "dashboard",
-      reason: "raw AI reason",
-      source: "ai-plan",
-    });
-
-    (globalThis as any).window.go.app.App = {
-      ...mockBackendApp,
-      JVMExecuteDiagnosticCommand: undefined,
-    };
-    const unavailableRenderer = await createConsoleWithLanguage("en-US", {
-      ...baseState,
-      jvmDiagnosticDrafts: {
-        "tab-1": {
-          sessionId: "session-1",
-          command: "thread -n 5",
-        },
-      },
-    });
-    const executeButton = unavailableRenderer.root
-      .findAllByType("button")
-      .find((button: any) => button.children.includes("Execute command"));
-    await act(async () => {
-      executeButton.props.onClick();
-    });
-    expect(JSON.stringify(unavailableRenderer.toJSON())).toContain(
-      "JVMExecuteDiagnosticCommand backend method is unavailable",
-    );
-
-    let resolveCommand: (value: any) => void = () => {};
-    mockBackendApp.JVMExecuteDiagnosticCommand.mockReturnValue(
-      new Promise((resolve) => {
-        resolveCommand = resolve;
-      }),
-    );
-    (globalThis as any).window.go.app.App = {
-      ...mockBackendApp,
-      JVMCancelDiagnosticCommand: undefined,
-    };
-    const cancelRenderer = await createConsoleWithLanguage("en-US", {
-      ...baseState,
-      jvmDiagnosticDrafts: {
-        "tab-1": {
-          sessionId: "session-1",
-          command: "thread -n 5",
-        },
-      },
-    });
-    const cancelExecuteButton = cancelRenderer.root
-      .findAllByType("button")
-      .find((button: any) => button.children.includes("Execute command"));
-    await act(async () => {
-      cancelExecuteButton.props.onClick();
-    });
-    const cancelButton = cancelRenderer.root
-      .findAllByType("button")
-      .find((button: any) => button.children.includes("Cancel command"));
-    await act(async () => {
-      cancelButton.props.onClick();
-      resolveCommand({ success: true });
-    });
-    expect(JSON.stringify(cancelRenderer.toJSON())).toContain(
-      "JVMCancelDiagnosticCommand backend method is unavailable",
-    );
   });
 
   it("localizes successful cancel request message in en-US", async () => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Dropdown, Tabs, Tooltip, message, type MenuProps } from 'antd';
-import { BugOutlined, CloseOutlined, CopyOutlined, EyeInvisibleOutlined, PlayCircleOutlined, RobotOutlined } from '@ant-design/icons';
+import { BugOutlined, CloseOutlined, CopyOutlined, EyeInvisibleOutlined, PlayCircleOutlined } from '@ant-design/icons';
 
 import type { EditRowLocator } from '../utils/rowLocator';
 import type { QueryResultPaginationState } from '../utils/queryResultPagination';
@@ -50,7 +50,6 @@ interface QueryEditorResultsPanelProps {
     onCloseAllResultTabs: () => void;
     onReloadResult: (key: string, sql: string) => void;
     onResultPageChange: (key: string, page: number, pageSize: number) => void;
-    onDiagnoseExecutionError: () => void;
     onDismissExecutionError?: () => void;
     resultsClearedByLowMemory?: boolean;
     onRerunQuery?: () => void;
@@ -78,7 +77,6 @@ const QueryEditorResultsPanel: React.FC<QueryEditorResultsPanelProps> = ({
     onCloseAllResultTabs,
     onReloadResult,
     onResultPageChange,
-    onDiagnoseExecutionError,
     onDismissExecutionError,
     resultsClearedByLowMemory = false,
     onRerunQuery,
@@ -404,7 +402,6 @@ const QueryEditorResultsPanel: React.FC<QueryEditorResultsPanelProps> = ({
                 <LogPanel
                     variant="embedded"
                     executionError={executionError}
-                    onDiagnoseExecutionError={executionError ? onDiagnoseExecutionError : undefined}
                     onDismissExecutionError={executionError ? onDismissExecutionError : undefined}
                 />
             ),
@@ -663,16 +660,6 @@ const QueryEditorResultsPanel: React.FC<QueryEditorResultsPanelProps> = ({
                             </div>
                             <div className="custom-scrollbar" style={{ padding: 16, background: darkMode ? '#2d1a1a' : '#fff2f0', border: `1px solid ${darkMode ? '#5c2020' : '#ffccc7'}`, borderRadius: 6, color: darkMode ? '#ffa39e' : '#cf1322', fontFamily: 'var(--gn-font-mono)', fontSize: 'var(--gn-font-size-mono, 13px)', whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: '40vh', overflow: 'auto' }}>
                                 {executionError}
-                            </div>
-                            <div style={{ marginTop: 8 }}>
-                                <Button
-                                    type="primary"
-                                    icon={<RobotOutlined />}
-                                    style={{ background: '#818cf8', borderColor: '#818cf8', boxShadow: '0 2px 0 rgba(129, 140, 248, 0.2)' }}
-                                    onClick={onDiagnoseExecutionError}
-                                >
-                                    {t('query_editor.result.ai_diagnose')}
-                                </Button>
                             </div>
                         </div>
                     </>

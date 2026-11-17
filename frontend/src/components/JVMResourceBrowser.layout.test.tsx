@@ -40,8 +40,6 @@ vi.mock('../store', () => ({
       },
     ],
     addTab: vi.fn(),
-    aiPanelVisible: false,
-    setAIPanelVisible: vi.fn(),
   }),
 }));
 

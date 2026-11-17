@@ -6,7 +6,6 @@ import {
   TableOutlined,
   DatabaseOutlined,
   FileAddOutlined,
-  RobotOutlined,
   ToolOutlined,
   SettingOutlined,
   MenuFoldOutlined,
@@ -24,18 +23,14 @@ import SlowQueryRailButton from './SlowQueryRailButton';
 // 主组件 props drilling 复杂度可控（只有一处调用点）。
 
 export interface SidebarConnectionRailProps {
-  showLabels: boolean;
-  showAIAssistant?: boolean;
-  sqlLogCount?: number;
+  showLabels: boolean;  sqlLogCount?: number;
   labels: {
     railSystemActions: string;
     railObjectActions: string;
     newGroup: string;
     batchTables: string;
     batchDatabases: string;
-    openExternalSqlFile: string;
-    aiAssistant: string;
-    sqlExecutionLog: string;
+    openExternalSqlFile: string;    sqlExecutionLog: string;
     tools: string;
     settings: string;
     settingsTooltip?: string;
@@ -46,9 +41,7 @@ export interface SidebarConnectionRailProps {
     openCreateTagModal: () => void;
     openBatchTableExport: () => void;
     openBatchDatabaseExport: () => void;
-    openExternalSqlFile: () => void;
-    toggleAI?: () => void;
-    toggleLogPanel?: () => void;
+    openExternalSqlFile: () => void;    toggleLogPanel?: () => void;
     openTools: () => void;
     openSettings: () => void;
     toggleShowLabels: () => void;
@@ -112,9 +105,7 @@ const RailActionButton: React.FC<RailActionButtonProps> = ({
 };
 
 const SidebarConnectionRail: React.FC<SidebarConnectionRailProps> = ({
-  showLabels,
-  showAIAssistant = false,
-  sqlLogCount = 0,
+  showLabels,  sqlLogCount = 0,
   labels,
   handlers,
 }) => {
@@ -160,15 +151,6 @@ const SidebarConnectionRail: React.FC<SidebarConnectionRailProps> = ({
         />
       </div>
       <div className="gn-v2-rail-secondary-actions" aria-label={labels.railSystemActions}>
-        {showAIAssistant && handlers.toggleAI ? (
-        <RailActionButton
-          label={labels.aiAssistant}
-          icon={<RobotOutlined />}
-          onClick={handlers.toggleAI}
-          showLabels={showLabels}
-          dataAttributes={{ 'data-gonavi-ai-entry-action': true }}
-        />
-        ) : null}
         <RailActionButton
           label={labels.sqlExecutionLog}
           icon={<BarsOutlined />}

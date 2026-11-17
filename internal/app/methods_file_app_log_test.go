@@ -11,7 +11,7 @@ func TestReadAppLogTailByPathReturnsLatestLinesAndLevelBreakdown(t *testing.T) {
 	logPath := filepath.Join(dir, "gonavi.log")
 	content := "" +
 		"2026/06/09 10:00:00.000000 [INFO] boot ok\n" +
-		"2026/06/09 10:00:01.000000 [WARN] slow mcp start\n" +
+		"2026/06/09 10:00:01.000000 [WARN] slow proxy start\n" +
 		"2026/06/09 10:00:02.000000 [ERROR] mysql dial failed\n"
 	if err := os.WriteFile(logPath, []byte(content), 0o644); err != nil {
 		t.Fatalf("write log failed: %v", err)
@@ -35,7 +35,7 @@ func TestReadAppLogTailByPathReturnsLatestLinesAndLevelBreakdown(t *testing.T) {
 	if snapshot.LevelBreakdown["WARN"] != 1 || snapshot.LevelBreakdown["ERROR"] != 1 {
 		t.Fatalf("unexpected level breakdown: %#v", snapshot.LevelBreakdown)
 	}
-	if snapshot.Lines[0] != "2026/06/09 10:00:01.000000 [WARN] slow mcp start" {
+	if snapshot.Lines[0] != "2026/06/09 10:00:01.000000 [WARN] slow proxy start" {
 		t.Fatalf("unexpected first returned line: %s", snapshot.Lines[0])
 	}
 	if snapshot.Lines[1] != "2026/06/09 10:00:02.000000 [ERROR] mysql dial failed" {
@@ -48,13 +48,13 @@ func TestReadAppLogTailByPathFiltersByKeywordCaseInsensitively(t *testing.T) {
 	logPath := filepath.Join(dir, "gonavi.log")
 	content := "" +
 		"2026/06/09 10:00:00.000000 [INFO] bootstrap ok\n" +
-		"2026/06/09 10:00:01.000000 [ERROR] MCP start failed\n" +
-		"2026/06/09 10:00:02.000000 [WARN] retry mcp connection\n"
+		"2026/06/09 10:00:01.000000 [ERROR] Proxy start failed\n" +
+		"2026/06/09 10:00:02.000000 [WARN] retry proxy connection\n"
 	if err := os.WriteFile(logPath, []byte(content), 0o644); err != nil {
 		t.Fatalf("write log failed: %v", err)
 	}
 
-	result := readAppLogTailByPath(logPath, 10, "mCp")
+	result := readAppLogTailByPath(logPath, 10, "pRoXy")
 	if !result.Success {
 		t.Fatalf("expected success, got failure: %s", result.Message)
 	}
@@ -66,7 +66,7 @@ func TestReadAppLogTailByPathFiltersByKeywordCaseInsensitively(t *testing.T) {
 	if snapshot.ReturnedLineCount != 2 {
 		t.Fatalf("expected 2 matched lines, got %d", snapshot.ReturnedLineCount)
 	}
-	if snapshot.Keyword != "mCp" {
+	if snapshot.Keyword != "pRoXy" {
 		t.Fatalf("expected original keyword to be preserved, got %q", snapshot.Keyword)
 	}
 	if snapshot.LevelBreakdown["ERROR"] != 1 || snapshot.LevelBreakdown["WARN"] != 1 {

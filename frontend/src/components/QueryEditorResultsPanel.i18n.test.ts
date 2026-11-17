@@ -45,7 +45,6 @@ const requiredKeys = [
   'query_editor.result.execution_success',
   'query_editor.result.affected_rows',
   'query_editor.result.execution_failed',
-  'query_editor.result.ai_diagnose',
 ];
 
 describe('QueryEditorResultsPanel i18n', () => {

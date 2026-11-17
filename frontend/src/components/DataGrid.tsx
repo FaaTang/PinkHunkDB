@@ -4172,7 +4172,6 @@ const DataGrid: React.FC<DataGridProps> = ({
       onPageChange(nextPage, pagination.pageSize);
   }, [onPageChange, pagination, paginationTotalPages]);
 
-  const aiShortcutLabel = resolveShortcutDisplay(shortcutOptions ?? DEFAULT_SHORTCUT_OPTIONS, 'toggleAIPanel', activeShortcutPlatform);
   
     return (
     <DataGridShell
@@ -4194,7 +4193,6 @@ const DataGrid: React.FC<DataGridProps> = ({
         activePageFindPosition,
         activeShortcutPlatform,
         addFilter,
-        aiShortcutLabel,
         allSelectedAreDeleted,
         applyAllFiltersDisabled,
         applyAllFiltersEnabled,

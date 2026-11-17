@@ -37,7 +37,6 @@ describe("jvmDiagnosticPresentation", () => {
         "jvm_diagnostic.presentation.event.done": "Execution finished",
         "jvm_diagnostic.presentation.risk.high": "High risk",
         "jvm_diagnostic.presentation.command_type.trace": "Trace",
-        "jvm_diagnostic.presentation.source.ai_plan": "AI plan",
         "jvm_diagnostic.presentation.fallback.unknown": "Unknown",
         "jvm_diagnostic.presentation.chunk.empty_event": "Empty event",
         "jvm_diagnostic.completion.preset.thread-top.documentation":
@@ -55,7 +54,6 @@ describe("jvmDiagnosticPresentation", () => {
     expect(formatJVMDiagnosticEventLabel("done", translate)).toBe("Execution finished");
     expect(formatJVMDiagnosticRiskLabel("high", translate)).toBe("High risk");
     expect(formatJVMDiagnosticCommandTypeLabel("trace", translate)).toBe("Trace");
-    expect(formatJVMDiagnosticSourceLabel("ai-plan", translate)).toBe("AI plan");
     expect(formatJVMDiagnosticPhaseLabel(undefined, translate)).toBe("Unknown");
     expect(formatJVMDiagnosticChunkText({ sessionId: "sess-1" }, translate)).toBe(
       "Empty event",
@@ -287,7 +285,6 @@ describe("jvmDiagnosticPresentation", () => {
     expect(formatJVMDiagnosticTransportLabel("arthas-tunnel")).toBe("Arthas Tunnel");
     expect(formatJVMDiagnosticRiskLabel("high")).toBe("High risk");
     expect(formatJVMDiagnosticCommandTypeLabel("trace")).toBe("Trace");
-    expect(formatJVMDiagnosticSourceLabel("ai-plan")).toBe("AI plan");
   });
 
   it("maps risk levels to tag colors", () => {

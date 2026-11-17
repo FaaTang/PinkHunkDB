@@ -20,58 +20,10 @@ const resolveDevHarnessMode = (): string => {
     }
 };
 
-if (typeof window !== 'undefined' && (!(window as any).go?.app?.App || !(window as any).go?.aiservice?.Service)) {
+if (typeof window !== 'undefined' && (!(window as any).go?.app?.App)) {
     const mockConnections: any[] = [];
     const mockSavedQueries: any[] = [];
     const mockConnectionSecrets = new Map<string, any>();
-    const mockProviders: any[] = [];
-    const mockProviderSecrets = new Map<string, string>();
-    let mockActiveProviderId = '';
-    let mockAISafetyLevel = 'readonly';
-    let mockAIContextLevel = 'schema_only';
-    let mockAIUserPromptSettings: any = {
-        global: '',
-        database: '',
-        jvm: '',
-        jvmDiagnostic: '',
-    };
-    let mockMCPServers: any[] = [];
-    let mockMCPHTTPServerStatus: any = {
-        running: false,
-        addr: '127.0.0.1:8765',
-        path: '/mcp',
-        url: 'http://127.0.0.1:8765/mcp',
-        schemaOnly: true,
-        message: t('app.browser_mock.mcp_http.not_running'),
-    };
-    let mockMCPClientStatuses: any[] = [
-        {
-            client: 'claude-code',
-            displayName: 'Claude Code',
-            installed: false,
-            matchesCurrent: false,
-            clientDetected: false,
-            clientCommand: 'claude',
-            message: t('app.browser_mock.mcp_client.claude_code.not_detected'),
-            configPath: 'C:/Users/mock/.claude.json',
-            command: 'C:/Program Files/PinkHunkDB/PinkHunkDB.exe',
-            args: ['mcp-server'],
-        },
-        {
-            client: 'codex',
-            displayName: 'Codex',
-            installed: true,
-            matchesCurrent: false,
-            clientDetected: true,
-            clientCommand: 'codex',
-            clientPath: 'C:/Users/mock/AppData/Roaming/npm/codex.cmd',
-            message: t('app.browser_mock.mcp_client.codex.path_mismatch'),
-            configPath: 'C:/Users/mock/.codex/config.toml',
-            command: 'C:/Old/PinkHunkDB.exe',
-            args: ['mcp-server'],
-        },
-    ];
-    let mockSkills: any[] = [];
     let mockGlobalProxy: any = { enabled: false, type: 'socks5', host: '', port: 1080, user: '', password: '', hasPassword: false };
     let mockDataRootInfo: any = {
         path: 'C:/mock/.gonavi',
@@ -188,36 +140,6 @@ if (typeof window !== 'undefined' && (!(window as any).go?.app?.App || !(window 
         return cloneBrowserMockValue(mockGlobalProxy);
     };
 
-    const saveMockProvider = (input: any) => {
-        const existing = mockProviders.find((item) => item.id === input?.id);
-        const nextId = String(input?.id || existing?.id || `provider-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
-        const apiKey = String(input?.apiKey ?? '');
-        if (apiKey !== '') {
-            mockProviderSecrets.set(nextId, apiKey);
-        } else if (input?.hasSecret === false) {
-            mockProviderSecrets.delete(nextId);
-        }
-        const hasSecret = mockProviderSecrets.has(nextId);
-        const view = {
-            ...existing,
-            ...input,
-            id: nextId,
-            apiKey: '',
-            hasSecret,
-            secretRef: '',
-        };
-        const index = mockProviders.findIndex((item) => item.id === nextId);
-        if (index >= 0) {
-            mockProviders[index] = view;
-        } else {
-            mockProviders.push(view);
-        }
-        if (!mockActiveProviderId) {
-            mockActiveProviderId = nextId;
-        }
-        return cloneBrowserMockValue(view);
-    };
-
     const mockGo = {
         app: {
             App: {
@@ -316,7 +238,7 @@ if (typeof window !== 'undefined' && (!(window as any).go?.app?.App || !(window 
                 ReadAppLogTail: async (lineLimit: number, keyword: string) => {
                     const allLines = [
                         '2026/06/09 10:10:00.000000 [INFO] 应用启动完成',
-                        '2026/06/09 10:10:05.000000 [WARN] MCP mock service slow start',
+                        '2026/06/09 10:10:05.000000 [WARN] proxy mock service slow start',
                         '2026/06/09 10:10:09.000000 [ERROR] MySQL mock dial failed: connect timeout',
                     ];
                     const normalizedKeyword = String(keyword || '').trim().toLowerCase();
@@ -382,212 +304,7 @@ if (typeof window !== 'undefined' && (!(window as any).go?.app?.App || !(window 
                     return { success: true, message: t('app.data_root.message.updated'), data: cloneBrowserMockValue(mockDataRootInfo) };
                 },
             }
-        },
-        aiservice: {
-            Service: {
-                AIGetProviders: async () => cloneBrowserMockValue(mockProviders),
-                AIGetEditableProvider: async (id: string) => {
-                    const existing = mockProviders.find((item) => item.id === id);
-                    if (!existing) {
-                        throw new Error(`provider not found: ${id}`);
-                    }
-                    return cloneBrowserMockValue({
-                        ...existing,
-                        apiKey: mockProviderSecrets.get(id) || '',
-                    });
-                },
-                AISaveProvider: async (input: any) => saveMockProvider(input),
-                AIDeleteProvider: async (id: string) => {
-                    const index = mockProviders.findIndex((item) => item.id === id);
-                    if (index >= 0) {
-                        mockProviders.splice(index, 1);
-                    }
-                    mockProviderSecrets.delete(id);
-                    if (mockActiveProviderId === id) {
-                        mockActiveProviderId = mockProviders[0]?.id || '';
-                    }
-                    return null;
-                },
-                AIGetActiveProvider: async () => mockActiveProviderId,
-                AISetActiveProvider: async (id: string) => {
-                    mockActiveProviderId = id;
-                    return null;
-                },
-                AIGetSafetyLevel: async () => mockAISafetyLevel,
-                AIGetContextLevel: async () => mockAIContextLevel,
-                AIGetBuiltinPrompts: async () => ({}),
-                AIGetUserPromptSettings: async () => cloneBrowserMockValue(mockAIUserPromptSettings),
-                AISaveUserPromptSettings: async (input: any) => {
-                    mockAIUserPromptSettings = {
-                        global: String(input?.global || ''),
-                        database: String(input?.database || ''),
-                        jvm: String(input?.jvm || ''),
-                        jvmDiagnostic: String(input?.jvmDiagnostic || ''),
-                    };
-                    return null;
-                },
-                AIGetMCPClientInstallStatuses: async () => cloneBrowserMockValue(mockMCPClientStatuses),
-                AIGetMCPHTTPServerStatus: async () => cloneBrowserMockValue(mockMCPHTTPServerStatus),
-                AIStartMCPHTTPServer: async (input: any) => {
-                    const addr = String(input?.addr || '127.0.0.1:8765');
-                    const path = String(input?.path || '/mcp').startsWith('/') ? String(input?.path || '/mcp') : `/${String(input?.path || '/mcp')}`;
-                    const token = String(input?.token || 'gnv_browser_mock_token').trim() || 'gnv_browser_mock_token';
-                    mockMCPHTTPServerStatus = {
-                        running: true,
-                        addr,
-                        path,
-                        url: `http://${addr}${path}`,
-                        schemaOnly: true,
-                        token,
-                        authorizationHeader: `Bearer ${token}`,
-                        startedAt: Date.now(),
-                        message: t('app.browser_mock.mcp_http.started'),
-                    };
-                    return cloneBrowserMockValue(mockMCPHTTPServerStatus);
-                },
-                AIStopMCPHTTPServer: async () => {
-                    mockMCPHTTPServerStatus = {
-                        ...mockMCPHTTPServerStatus,
-                        running: false,
-                        message: t('app.browser_mock.mcp_http.stopped'),
-                    };
-                    return cloneBrowserMockValue(mockMCPHTTPServerStatus);
-                },
-                AIGetMCPServers: async () => cloneBrowserMockValue(mockMCPServers),
-                AIInstallClaudeCodeMCP: async () => {
-                    mockMCPClientStatuses = mockMCPClientStatuses.map((item) => item.client === 'claude-code'
-                        ? {
-                            ...item,
-                            installed: true,
-                            matchesCurrent: true,
-                            message: t('app.browser_mock.mcp_client.claude_code.installed'),
-                            command: 'C:/Program Files/PinkHunkDB/PinkHunkDB.exe',
-                            args: ['mcp-server'],
-                        }
-                        : item);
-                    return {
-                        success: true,
-                        client: 'claude-code',
-                        message: t('app.browser_mock.mcp_client.claude_code.installed'),
-                        configPath: 'C:/Users/mock/.claude.json',
-                        command: 'C:/Program Files/PinkHunkDB/PinkHunkDB.exe',
-                        args: ['mcp-server'],
-                    };
-                },
-                AIInstallCodexMCP: async () => {
-                    mockMCPClientStatuses = mockMCPClientStatuses.map((item) => item.client === 'codex'
-                        ? {
-                            ...item,
-                            installed: true,
-                            matchesCurrent: true,
-                            message: t('app.browser_mock.mcp_client.codex.installed'),
-                            command: 'C:/Program Files/PinkHunkDB/PinkHunkDB.exe',
-                            args: ['mcp-server'],
-                        }
-                        : item);
-                    return {
-                        success: true,
-                        client: 'codex',
-                        message: t('app.browser_mock.mcp_client.codex.installed'),
-                        configPath: 'C:/Users/mock/.codex/config.toml',
-                        command: 'C:/Program Files/PinkHunkDB/PinkHunkDB.exe',
-                        args: ['mcp-server'],
-                    };
-                },
-                AISaveMCPServer: async (input: any) => {
-                    const next = {
-                        id: String(input?.id || `mcp-${Date.now()}`),
-                        name: String(input?.name || ''),
-                        transport: 'stdio',
-                        command: String(input?.command || ''),
-                        args: Array.isArray(input?.args) ? [...input.args] : [],
-                        env: { ...(input?.env || {}) },
-                        enabled: input?.enabled !== false,
-                        timeoutSeconds: Number(input?.timeoutSeconds) || 20,
-                    };
-                    const index = mockMCPServers.findIndex((item) => item.id === next.id);
-                    if (index >= 0) mockMCPServers[index] = next;
-                    else mockMCPServers.push(next);
-                    return null;
-                },
-                AIDeleteMCPServer: async (id: string) => {
-                    mockMCPServers = mockMCPServers.filter((item) => item.id !== id);
-                    return null;
-                },
-                AITestMCPServer: async (input: any) => ({
-                    success: String(input?.command || '').trim() !== '',
-                    message: String(input?.command || '').trim() !== ''
-                        ? t('app.browser_mock.mcp_server.test_success')
-                        : t('app.browser_mock.mcp_server.command_required'),
-                    tools: [],
-                }),
-                AIListMCPTools: async () => [],
-                AICallMCPTool: async (_alias: string, _argumentsJSON: string) => ({
-                    alias: _alias,
-                    serverId: '',
-                    serverName: '',
-                    originalName: _alias,
-                    content: t('app.browser_mock.mcp_tool.unavailable'),
-                    isError: true,
-                }),
-                AIGetSkills: async () => cloneBrowserMockValue(mockSkills),
-                AISaveSkill: async (input: any) => {
-                    const next = {
-                        id: String(input?.id || `skill-${Date.now()}`),
-                        name: String(input?.name || ''),
-                        description: String(input?.description || ''),
-                        systemPrompt: String(input?.systemPrompt || ''),
-                        enabled: input?.enabled !== false,
-                        scopes: Array.isArray(input?.scopes) ? [...input.scopes] : ['global'],
-                        requiredTools: Array.isArray(input?.requiredTools) ? [...input.requiredTools] : [],
-                    };
-                    const index = mockSkills.findIndex((item) => item.id === next.id);
-                    if (index >= 0) mockSkills[index] = next;
-                    else mockSkills.push(next);
-                    return null;
-                },
-                AIDeleteSkill: async (id: string) => {
-                    mockSkills = mockSkills.filter((item) => item.id !== id);
-                    return null;
-                },
-                AITestProvider: async (input: any) => ({
-                    success: String(input?.apiKey || '').trim() !== '',
-                    message: String(input?.apiKey || '').trim() !== ''
-                        ? t('app.browser_mock.provider.test_success')
-                        : t('app.browser_mock.provider.test_failed_detail', { detail: 'missing api key' }),
-                }),
-                AISetSafetyLevel: async (level: string) => {
-                    mockAISafetyLevel = String(level || 'readonly');
-                    return null;
-                },
-                AISetContextLevel: async (level: string) => {
-                    mockAIContextLevel = String(level || 'schema_only');
-                    return null;
-                },
-                AISetLanguage: async () => null,
-            },
         }
-    };
-    const existingGo = (window as any).go || {};
-    (window as any).go = {
-        ...mockGo,
-        ...existingGo,
-        app: {
-            ...mockGo.app,
-            ...(existingGo.app || {}),
-            App: {
-                ...mockGo.app.App,
-                ...(existingGo.app?.App || {}),
-            },
-        },
-        aiservice: {
-            ...mockGo.aiservice,
-            ...(existingGo.aiservice || {}),
-            Service: {
-                ...mockGo.aiservice.Service,
-                ...(existingGo.aiservice?.Service || {}),
-            },
-        },
     };
 }
 const rootNode = document.getElementById('root')!;

@@ -16,17 +16,12 @@ export interface MemoryPolicyAppearance {
 export interface MemoryAdvancedSettings {
   destroyInactiveTabs: boolean;
   sidebarDbCacheLimit: number;
-  runtimeSqlLogLimit: number;
-  aiMessageMemoryLimit: number;
-  sidebarIdleReleaseMinutes: number;
+  runtimeSqlLogLimit: number;  sidebarIdleReleaseMinutes: number;
   goGCPercent: number;
 }
 
 export interface MemorySettings {
-  lowMemoryMode: boolean;
-  /** When false, AI UI modules are not loaded and AI entry points are hidden. */
-  aiAssistantEnabled: boolean;
-  advanced: MemoryAdvancedSettings;
+  lowMemoryMode: boolean;  advanced: MemoryAdvancedSettings;
   /** Stashed query max-rows state restored when low-memory mode is turned off. */
   queryMaxRowsStash: QueryMaxRowsState | null;
 }
@@ -45,14 +40,10 @@ export const NORMAL_RUNTIME_SQL_LOG_LIMIT = 120;
 export const NORMAL_GO_GC_PERCENT = 50;
 
 export const DEFAULT_MEMORY_SETTINGS: MemorySettings = {
-  lowMemoryMode: false,
-  aiAssistantEnabled: false,
-  advanced: {
+  lowMemoryMode: false,  advanced: {
     destroyInactiveTabs: true,
     sidebarDbCacheLimit: 6,
-    runtimeSqlLogLimit: 60,
-    aiMessageMemoryLimit: 50,
-    sidebarIdleReleaseMinutes: 30,
+    runtimeSqlLogLimit: 60,    sidebarIdleReleaseMinutes: 30,
     goGCPercent: 40,
   },
   queryMaxRowsStash: null,
@@ -92,14 +83,6 @@ const sanitizeRuntimeSqlLogLimit = (value: unknown): number =>
     30,
     120,
     DEFAULT_MEMORY_SETTINGS.advanced.runtimeSqlLogLimit,
-  );
-
-const sanitizeAiMessageMemoryLimit = (value: unknown): number =>
-  sanitizeBoundedInt(
-    value,
-    20,
-    200,
-    DEFAULT_MEMORY_SETTINGS.advanced.aiMessageMemoryLimit,
   );
 
 const sanitizeSidebarIdleReleaseMinutes = (value: unknown): number => {
@@ -163,16 +146,10 @@ export const sanitizeMemorySettings = (value: unknown): MemorySettings => {
     : {};
 
   return {
-    lowMemoryMode: raw.lowMemoryMode === true,
-    aiAssistantEnabled: typeof raw.aiAssistantEnabled === "boolean"
-      ? raw.aiAssistantEnabled
-      : true,
-    advanced: {
+    lowMemoryMode: raw.lowMemoryMode === true,    advanced: {
       destroyInactiveTabs: advancedRaw.destroyInactiveTabs !== false,
       sidebarDbCacheLimit: sanitizeSidebarDbCacheLimit(advancedRaw.sidebarDbCacheLimit),
-      runtimeSqlLogLimit: sanitizeRuntimeSqlLogLimit(advancedRaw.runtimeSqlLogLimit),
-      aiMessageMemoryLimit: sanitizeAiMessageMemoryLimit(advancedRaw.aiMessageMemoryLimit),
-      sidebarIdleReleaseMinutes: sanitizeSidebarIdleReleaseMinutes(
+      runtimeSqlLogLimit: sanitizeRuntimeSqlLogLimit(advancedRaw.runtimeSqlLogLimit),      sidebarIdleReleaseMinutes: sanitizeSidebarIdleReleaseMinutes(
         advancedRaw.sidebarIdleReleaseMinutes,
       ),
       goGCPercent: sanitizeGoGCPercent(advancedRaw.goGCPercent),
@@ -220,19 +197,8 @@ export const resolveRuntimeSqlLogLimit = (policy: MemoryPolicy): number => {
   return policy.memorySettings.advanced.runtimeSqlLogLimit;
 };
 
-export const resolveAiMessageMemoryLimit = (policy: MemoryPolicy): number | null => {
-  if (!policy.effectiveLowMemoryMode) {
-    return null;
-  }
-  return policy.memorySettings.advanced.aiMessageMemoryLimit;
-};
-
 export const shouldLazyLoadHeavyModules = (policy: MemoryPolicy): boolean => {
   return policy.effectiveLowMemoryMode;
-};
-
-export const shouldLoadAIAssistant = (policy: MemoryPolicy): boolean => {
-  return policy.memorySettings.aiAssistantEnabled;
 };
 
 export const resolveGoGCPercent = (policy: MemoryPolicy): number => {

@@ -44,20 +44,11 @@ func (b GlobalProxyBundle) HasAny() bool {
 	return strings.TrimSpace(b.Password) != ""
 }
 
-type ProviderBundle struct {
-	APIKey           string            `json:"apiKey,omitempty"`
-	SensitiveHeaders map[string]string `json:"sensitiveHeaders,omitempty"`
-}
-
-func (b ProviderBundle) HasAny() bool {
-	return strings.TrimSpace(b.APIKey) != "" || len(b.SensitiveHeaders) > 0
-}
 
 type File struct {
 	SchemaVersion int                         `json:"schemaVersion,omitempty"`
 	Connections   map[string]ConnectionBundle `json:"connections,omitempty"`
 	GlobalProxy   *GlobalProxyBundle          `json:"globalProxy,omitempty"`
-	AIProviders   map[string]ProviderBundle   `json:"aiProviders,omitempty"`
 }
 
 type Store struct {
@@ -103,9 +94,6 @@ func (s *Store) Save(file File) error {
 	}
 	if file.GlobalProxy != nil && !file.GlobalProxy.HasAny() {
 		file.GlobalProxy = nil
-	}
-	if len(file.AIProviders) == 0 {
-		file.AIProviders = nil
 	}
 	if err := os.MkdirAll(s.root, 0o755); err != nil {
 		return err
@@ -190,48 +178,3 @@ func (s *Store) DeleteGlobalProxy() error {
 	return s.Save(file)
 }
 
-func (s *Store) GetAIProvider(id string) (ProviderBundle, bool, error) {
-	file, err := s.Load()
-	if err != nil {
-		return ProviderBundle{}, false, err
-	}
-	bundle, ok := file.AIProviders[strings.TrimSpace(id)]
-	return bundle, ok, nil
-}
-
-func (s *Store) PutAIProvider(id string, bundle ProviderBundle) error {
-	file, err := s.Load()
-	if err != nil {
-		return err
-	}
-	if !bundle.HasAny() {
-		return s.deleteAIProviderFromFile(file, id)
-	}
-	if file.AIProviders == nil {
-		file.AIProviders = make(map[string]ProviderBundle)
-	}
-	if len(bundle.SensitiveHeaders) > 0 {
-		cloned := make(map[string]string, len(bundle.SensitiveHeaders))
-		for key, value := range bundle.SensitiveHeaders {
-			cloned[key] = value
-		}
-		bundle.SensitiveHeaders = cloned
-	}
-	file.AIProviders[strings.TrimSpace(id)] = bundle
-	return s.Save(file)
-}
-
-func (s *Store) DeleteAIProvider(id string) error {
-	file, err := s.Load()
-	if err != nil {
-		return err
-	}
-	return s.deleteAIProviderFromFile(file, id)
-}
-
-func (s *Store) deleteAIProviderFromFile(file File, id string) error {
-	if len(file.AIProviders) != 0 {
-		delete(file.AIProviders, strings.TrimSpace(id))
-	}
-	return s.Save(file)
-}

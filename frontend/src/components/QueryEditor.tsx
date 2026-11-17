@@ -141,22 +141,6 @@ export {
 const buildQueryEditorMonacoActionLabel = (key: string): string =>
     `PinkHunkDB: ${translate(key)}`;
 
-const QUERY_EDITOR_SQL_PROMPT_PLACEHOLDER = '{SQL}';
-
-const buildQueryEditorAiContextPrompt = (connection: any, database: string): string => {
-    if (!connection) {
-        return '';
-    }
-
-    const sourceLabel = String(connection.config?.type || '').trim() || translate('query_editor.ai_prompt.default_source');
-    const databaseLabel = String(database || '').trim() || translate('query_editor.ai_prompt.default_database');
-
-    return translate('query_editor.ai_prompt.context', {
-        type: sourceLabel,
-        name: `"${connection.name}"`,
-        database: `"${databaseLabel}"`,
-    });
-};
 
 // HMR 重载时释放旧注册避免补全和 hover 内容重复
 const _g = globalThis as any;
@@ -253,7 +237,6 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
   const sqlExecutionChooserCaretRestoreTokenRef = useRef(0);
   const pendingSqlExecutionChooserCaretRef = useRef<{ lineNumber: number; column: number } | null>(null);
   const runInFlightRef = useRef(false);
-  const aiContextMenuActionDisposablesRef = useRef<any[]>([]);
   const toggleQueryResultsPanelActionRef = useRef<any>(null);
   const lastExternalQueryRef = useRef<string>(getTabQueryValue(tab));
   const lastLocalQueryRef = useRef<string>(query);
@@ -1094,113 +1077,10 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       }
   }, []);
 
-  const buildQueryEditorAiContextMenuActions = useCallback(() => ([
-      {
-          id: 'ai.generateSQL',
-          label: `AI ${translate('query_editor.action.ai_generate_sql_menu')}`,
-          prompt: translate('query_editor.ai_prompt.generate'),
-      },
-      {
-          id: 'ai.explainSQL',
-          label: `AI ${translate('query_editor.action.ai_explain_sql_menu')}`,
-          useSelection: true,
-          prompt: translate('query_editor.ai_prompt.explain', { sql: QUERY_EDITOR_SQL_PROMPT_PLACEHOLDER }),
-      },
-      {
-          id: 'ai.optimizeSQL',
-          label: `AI ${translate('query_editor.action.ai_optimize_sql_menu')}`,
-          useSelection: true,
-          prompt: translate('query_editor.ai_prompt.optimize', { sql: QUERY_EDITOR_SQL_PROMPT_PLACEHOLDER }),
-      },
-  ]), []);
-
-  const disposeQueryEditorAiContextMenuActions = useCallback(() => {
-      aiContextMenuActionDisposablesRef.current.forEach((disposable) => disposable?.dispose?.());
-      aiContextMenuActionDisposablesRef.current = [];
-  }, []);
-
-  const registerQueryEditorAiContextMenuActions = useCallback((editor: any) => {
-      disposeQueryEditorAiContextMenuActions();
-      aiContextMenuActionDisposablesRef.current = buildQueryEditorAiContextMenuActions().map((action) => (
-          editor.addAction({
-              id: action.id,
-              label: action.label,
-              contextMenuGroupId: '9_ai',
-              contextMenuOrder: 1,
-              run: (ed: any) => {
-                  const selection = ed.getModel()?.getValueInRange(ed.getSelection());
-                  const conn = connectionsRef.current.find(c => c.id === currentConnectionIdRef.current);
-                  const ctxText = buildQueryEditorAiContextPrompt(conn, currentDbRef.current);
-                  let prompt = ctxText + action.prompt;
-                  if (action.useSelection && selection) {
-                      prompt = prompt.replace(QUERY_EDITOR_SQL_PROMPT_PLACEHOLDER, selection);
-                  }
-                  const store = useStore.getState();
-                  if (!store.aiPanelVisible) {
-                      store.setAIPanelVisible(true);
-                  }
-                  window.dispatchEvent(new CustomEvent('gonavi:ai:inject-prompt', { detail: { prompt } }));
-              },
-          })
-      ));
-  }, [buildQueryEditorAiContextMenuActions, disposeQueryEditorAiContextMenuActions]);
-
-  const buildQueryEditorSlashCommandDefs = useCallback(() => ([
-      {
-          cmd: '/query',
-          label: `🔍 ${translate('query_editor.slash_command.query.label')}`,
-          desc: translate('query_editor.slash_command.query.description'),
-          prompt: translate('query_editor.slash_command.query.prompt'),
-      },
-      {
-          cmd: '/sql',
-          label: `📝 ${translate('query_editor.slash_command.sql.label')}`,
-          desc: translate('query_editor.slash_command.sql.description'),
-          prompt: translate('query_editor.slash_command.sql.prompt'),
-      },
-      {
-          cmd: '/explain',
-          label: `💡 ${translate('query_editor.slash_command.explain.label')}`,
-          desc: translate('query_editor.slash_command.explain.description'),
-          prompt: translate('query_editor.slash_command.explain.prompt', { sql: QUERY_EDITOR_SQL_PROMPT_PLACEHOLDER }),
-          useSelection: true,
-      },
-      {
-          cmd: '/optimize',
-          label: `⚡ ${translate('query_editor.slash_command.optimize.label')}`,
-          desc: translate('query_editor.slash_command.optimize.description'),
-          prompt: translate('query_editor.slash_command.optimize.prompt', { sql: QUERY_EDITOR_SQL_PROMPT_PLACEHOLDER }),
-          useSelection: true,
-      },
-      {
-          cmd: '/schema',
-          label: `🏗️ ${translate('query_editor.slash_command.schema.label')}`,
-          desc: translate('query_editor.slash_command.schema.description'),
-          prompt: translate('query_editor.slash_command.schema.prompt'),
-      },
-      {
-          cmd: '/index',
-          label: `📊 ${translate('query_editor.slash_command.index.label')}`,
-          desc: translate('query_editor.slash_command.index.description'),
-          prompt: translate('query_editor.slash_command.index.prompt'),
-      },
-      {
-          cmd: '/diff',
-          label: `🔄 ${translate('query_editor.slash_command.diff.label')}`,
-          desc: translate('query_editor.slash_command.diff.description'),
-          prompt: translate('query_editor.slash_command.diff.prompt'),
-      },
-      {
-          cmd: '/mock',
-          label: `🎲 ${translate('query_editor.slash_command.mock.label')}`,
-          desc: translate('query_editor.slash_command.mock.description'),
-          prompt: translate('query_editor.slash_command.mock.prompt'),
-      },
-  ]), []);
-
-  const refreshQueryEditorSlashCommandDefs = useCallback(() => {
-      (window as any).__gonaviSlashCmdDefs = buildQueryEditorSlashCommandDefs();
-  }, [buildQueryEditorSlashCommandDefs]);
+  // AI 功能已移除：保留空实现，避免编辑器挂载流程引用断裂。
+  const disposeQueryEditorAiContextMenuActions = useCallback(() => {}, []);
+  const registerQueryEditorAiContextMenuActions = useCallback((_editor: any) => {}, []);
+  const refreshQueryEditorSlashCommandDefs = useCallback(() => {}, []);
 
   const syncQueryToEditor = (sql: string) => {
       const next = sql || '';
@@ -1963,10 +1843,7 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
           }
       });
 
-      editor.onDidChangeModelContent?.((event: any) => {
-          const hasSlashCommandMarker = Array.isArray(event?.changes)
-              && event.changes.some((change: any) => /__AI_\w+__/.test(String(change?.text || '')));
-          if (!hasSlashCommandMarker) return;
+      editor.onDidChangeModelContent?.(() => {
           refreshObjectDecorations(QUERY_EDITOR_LIVE_DECORATION_MAX_TEXT_LENGTH);
       });
 
@@ -2964,35 +2841,6 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
               return { suggestions };
           }
       }));
-      sqlCompletionDisposables.push(monaco.languages.registerCompletionItemProvider('sql', {
-          triggerCharacters: ['/'],
-          provideCompletionItems: (model: any, position: any) => {
-              const lineContent = model.getLineContent(position.lineNumber);
-              const textBefore = lineContent.substring(0, position.column - 1).trimStart();
-              if (!textBefore.startsWith('/')) {
-                  return { suggestions: [] };
-              }
-
-              const range = {
-                  startLineNumber: position.lineNumber,
-                  endLineNumber: position.lineNumber,
-                  startColumn: position.column - textBefore.length,
-                  endColumn: position.column,
-              };
-
-              return {
-                  suggestions: ((window as any).__gonaviSlashCmdDefs || []).map((c: any, i: number) => ({
-                      label: `${c.cmd}  ${c.label}`,
-                      kind: monaco.languages.CompletionItemKind.Event,
-                      detail: c.desc,
-                      insertText: `__AI_${c.cmd.slice(1).toUpperCase()}__`,
-                      range,
-                      sortText: String(i).padStart(2, '0'),
-                  })),
-              };
-          },
-      }));
-
 
       // SQL snippet completion provider
       sqlCompletionDisposables.push(monaco.languages.registerCompletionItemProvider('sql', {
@@ -3030,51 +2878,6 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       }));
 
       } // end sqlCompletionRegistered guard
-
-      // 每个编辑器实例都注册内容变化监听（检测斜杠命令标记）
-      let _handlingSlash = false;
-      editor.onDidChangeModelContent((event: any) => {
-          if (_handlingSlash) return;
-          const hasSlashCommandMarker = Array.isArray(event?.changes)
-              && event.changes.some((change: any) => /__AI_\w+__/.test(String(change?.text || '')));
-          if (!hasSlashCommandMarker) return;
-          const model = editor.getModel();
-          if (!model) return;
-          const content = model.getValue();
-          const markerMatch = content.match(/__AI_(\w+)__/);
-          if (!markerMatch) return;
-
-          const cmdKey = markerMatch[1].toLowerCase();
-          const defs = (window as any).__gonaviSlashCmdDefs || [];
-          const cmdDef = defs.find((c: any) => c.cmd === `/${cmdKey}`);
-          if (!cmdDef) return;
-
-          // 清除标记文本（带递归保护）
-          _handlingSlash = true;
-          const fullText = model.getValue();
-          const newText = fullText.replace(markerMatch[0], '').replace(/^\s*\n/, '');
-          model.setValue(newText);
-          _handlingSlash = false;
-
-          // 组装 prompt
-          const conn = connectionsRef.current.find(c => c.id === currentConnectionIdRef.current);
-          const ctxText = buildQueryEditorAiContextPrompt(conn, currentDbRef.current);
-          let finalPrompt = ctxText + cmdDef.prompt;
-          if (cmdDef.useSelection) {
-              const sel = editor.getSelection();
-              const selText = sel ? model.getValueInRange(sel) : '';
-              finalPrompt = finalPrompt.replace(QUERY_EDITOR_SQL_PROMPT_PLACEHOLDER, selText || getCurrentQuery());
-          }
-
-          // 打开 AI 面板并注入 prompt
-          const store = useStore.getState();
-          if (!store.aiPanelVisible) {
-              store.setAIPanelVisible(true);
-          }
-          setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('gonavi:ai:inject-prompt', { detail: { prompt: finalPrompt } }));
-          }, store.aiPanelVisible ? 0 : 350);
-      });
 
       if (isActive) {
           window.requestAnimationFrame(() => {
@@ -3214,28 +3017,6 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       });
       refreshObjectDecorations();
       void message.success(translate('query_editor.message.format_restore_success'));
-  };
-
-  const handleAIAction = (action: 'generate' | 'explain' | 'optimize' | 'schema') => {
-      const editor = editorRef.current;
-      const selection = editor?.getModel()?.getValueInRange(editor.getSelection()) || '';
-      const fullSQL = getCurrentQuery();
-
-      const conn = connections.find(c => c.id === currentConnectionId);
-      const ctxText = buildQueryEditorAiContextPrompt(conn, currentDb);
-
-      const prompts: Record<string, string> = {
-          generate: `${ctxText}${translate('query_editor.ai_prompt.generate')}`,
-          explain: `${ctxText}${translate('query_editor.ai_prompt.explain', { sql: selection || fullSQL || QUERY_EDITOR_SQL_PROMPT_PLACEHOLDER })}`,
-          optimize: `${ctxText}${translate('query_editor.ai_prompt.optimize', { sql: selection || fullSQL || QUERY_EDITOR_SQL_PROMPT_PLACEHOLDER })}`,
-          schema: `${ctxText}${translate('query_editor.ai_prompt.schema')}`,
-      };
-
-      const store = useStore.getState();
-      if (!store.aiPanelVisible) {
-          store.setAIPanelVisible(true);
-      }
-      window.dispatchEvent(new CustomEvent('gonavi:ai:inject-prompt', { detail: { prompt: prompts[action] } }));
   };
 
   const formatSettingsMenu: MenuProps['items'] = [
@@ -5455,20 +5236,6 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
           ? getShortcutDisplayLabel(toggleQueryResultsPanelShortcutBinding.combo, activeShortcutPlatform)
           : '';
 
-  const handleDiagnoseExecutionError = () => {
-      const errSql = getCurrentQuery();
-      const prompt = translate('query_editor.ai_prompt.diagnose', {
-          sql: errSql,
-          error: executionError,
-      });
-      const store = useStore.getState();
-      const wasClosed = !store.aiPanelVisible;
-      if (wasClosed) store.setAIPanelVisible(true);
-      setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('gonavi:ai:inject-prompt', { detail: { prompt } }));
-      }, wasClosed ? 350 : 0);
-  };
-
   const handleDismissExecutionError = () => {
       setExecutionError('');
   };
@@ -5541,7 +5308,6 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
         onQuickSave={handleQuickSave}
         onFormat={handleFormat}
         onToggleResultPanelVisibility={toggleResultPanelVisibility}
-        onAIAction={handleAIAction}
       />
 
       <div
@@ -5625,7 +5391,6 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
           onCloseAllResultTabs={closeAllResultTabs}
           onReloadResult={handleReloadResult}
           onResultPageChange={handleResultPageChange}
-          onDiagnoseExecutionError={handleDiagnoseExecutionError}
           onDismissExecutionError={handleDismissExecutionError}
           resultsClearedByLowMemory={Boolean(tab.resultsCleared && !loading && resultSets.length === 0)}
           onRerunQuery={requestRun}

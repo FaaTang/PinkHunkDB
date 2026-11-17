@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, Tag, Button, Tooltip, Empty } from 'antd';
-import { ClearOutlined, CloseOutlined, BugOutlined, RobotOutlined } from '@ant-design/icons';
+import { ClearOutlined, CloseOutlined, BugOutlined } from '@ant-design/icons';
 import { useStore } from '../store';
 import { useI18n } from '../i18n/provider';
 import { useResolvedDarkMode } from '../hooks/useResolvedDarkMode';
@@ -12,7 +12,6 @@ interface LogPanelProps {
     onResizeStart?: (e: React.MouseEvent) => void;
     variant?: 'panel' | 'embedded';
     executionError?: string;
-    onDiagnoseExecutionError?: () => void;
     onDismissExecutionError?: () => void;
 }
 
@@ -22,7 +21,6 @@ const LogPanel: React.FC<LogPanelProps> = ({
     onResizeStart,
     variant = 'panel',
     executionError,
-    onDiagnoseExecutionError,
     onDismissExecutionError,
 }) => {
     const { t } = useI18n();
@@ -282,18 +280,6 @@ const LogPanel: React.FC<LogPanelProps> = ({
                             >
                                 {executionError}
                             </div>
-                            {onDiagnoseExecutionError && (
-                                <div>
-                                    <Button
-                                        type="primary"
-                                        icon={<RobotOutlined />}
-                                        onClick={onDiagnoseExecutionError}
-                                        style={{ background: '#818cf8', borderColor: '#818cf8', boxShadow: '0 2px 0 rgba(129, 140, 248, 0.2)' }}
-                                    >
-                                        {t('query_editor.result.ai_diagnose')}
-                                    </Button>
-                                </div>
-                            )}
                         </div>
                     </div>
                 )}

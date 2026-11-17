@@ -24,8 +24,6 @@ const storeState = vi.hoisted(() => ({
   ],
   addTab: vi.fn(),
   setActiveContext: vi.fn(),
-  setAIPanelVisible: vi.fn(),
-  addAIContext: vi.fn(),
   pinnedSidebarTables: [] as string[],
   setSidebarTablePinned: vi.fn(),
 }));

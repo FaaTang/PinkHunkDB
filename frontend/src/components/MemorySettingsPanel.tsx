@@ -20,7 +20,6 @@ const IMPACT_KEYS = [
   "app.memory.low_memory.impact.default_max_rows",
   "app.memory.low_memory.impact.sidebar_cache",
   "app.memory.low_memory.impact.sql_logs",
-  "app.memory.low_memory.impact.ai_messages",
   "app.memory.low_memory.impact.large_export",
   "app.memory.low_memory.impact.idle_sidebar",
   "app.memory.low_memory.impact.lazy_modules",
@@ -113,27 +112,7 @@ const MemorySettingsPanel: React.FC<MemorySettingsPanelProps> = ({
         />
       ),
       resetKey: "runtimeSqlLogLimit" as const,
-    },
-    {
-      key: "aiMessageMemoryLimit",
-      label: t("app.memory.low_memory.advanced.ai_message_memory_limit"),
-      hint: t("app.memory.low_memory.advanced.ai_message_memory_limit_hint"),
-      control: (
-        <InputNumber
-          min={20}
-          max={200}
-          step={10}
-          value={memorySettings.advanced.aiMessageMemoryLimit}
-          onChange={(value) => {
-            if (typeof value === "number") {
-              setMemoryAdvancedOption("aiMessageMemoryLimit", value);
-            }
-          }}
-        />
-      ),
-      resetKey: "aiMessageMemoryLimit" as const,
-    },
-    {
+    },    {
       key: "sidebarIdleReleaseMinutes",
       label: t("app.memory.low_memory.advanced.sidebar_idle_release_minutes"),
       hint: t("app.memory.low_memory.advanced.sidebar_idle_release_minutes_hint"),
@@ -174,29 +153,7 @@ const MemorySettingsPanel: React.FC<MemorySettingsPanelProps> = ({
   ];
 
   return (
-    <div style={{ display: "grid", gap: 14 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <div>
-          <div style={{ fontWeight: 500 }}>{t("app.memory.ai_assistant.title")}</div>
-          <div style={{ ...(mutedTextStyle ?? {}), marginTop: 4 }}>
-            {t("app.memory.ai_assistant.summary")}
-          </div>
-        </div>
-        <Switch
-          checked={memorySettings.aiAssistantEnabled}
-          onChange={(checked) => setMemorySettings({ aiAssistantEnabled: checked })}
-        />
-      </div>
-
-      <div>
-        <ul style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 6 }}>
-          <li style={{ ...(mutedTextStyle ?? {}), lineHeight: 1.6 }}>
-            {t("app.memory.ai_assistant.impact")}
-          </li>
-        </ul>
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+    <div style={{ display: "grid", gap: 14 }}>      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
           <div style={{ fontWeight: 500 }}>{t("app.memory.low_memory.title")}</div>
           <div style={{ ...(mutedTextStyle ?? {}), marginTop: 4 }}>

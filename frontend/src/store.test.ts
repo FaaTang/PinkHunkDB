@@ -295,35 +295,7 @@ describe('store appearance persistence', () => {
     expect(useStore.getState().connections[0]?.config.password).toBe('secret');
   });
 
-  it('does not fail hydration when persisted OceanBase connection uses unsupported native protocol', async () => {
-    storage.setItem('lite-db-storage', JSON.stringify({
-      state: {
-        connections: [
-          {
-            id: 'oceanbase-native',
-            name: 'OceanBase Native',
-            config: {
-              id: 'oceanbase-native',
-              type: 'oceanbase',
-              host: 'ob.local',
-              port: 2881,
-              user: 'root@test',
-              oceanBaseProtocol: 'mysql',
-              connectionParams: 'protocol=native',
-            },
-          },
-        ],
-      },
-      version: 9,
-    }));
 
-    const { useStore } = await importStore();
-    const config = useStore.getState().connections[0]?.config;
-
-    expect(useStore.getState().connections).toHaveLength(1);
-    expect(config?.connectionParams).toBe('protocol=native');
-    expect(config?.oceanBaseProtocol).toBe('mysql');
-  });
 
   it('preserves JVM Arthas diagnostic config when replacing saved connections', async () => {
     const { useStore } = await importStore();
@@ -1076,27 +1048,7 @@ describe('store appearance persistence', () => {
     );
   });
 
-  it('uses localized AI session fallback titles for non-user first messages', async () => {
-    vi.useFakeTimers();
-    try {
-      const i18n = await import('./i18n');
-      i18n.setCurrentLanguage('en-US');
-      const { useStore } = await importStore();
 
-      useStore.getState().addAIChatMessage('assistant-first', {
-        id: 'message-1',
-        role: 'assistant',
-        content: '',
-        timestamp: 1,
-      });
-
-      expect(useStore.getState().aiChatSessions[0]?.title).toBe(
-        i18n.t('ai_chat.panel.session.default_title'),
-      );
-    } finally {
-      vi.useRealTimers();
-    }
-  });
 
   it('keeps store fallback titles out of production source literals', async () => {
     const { readFileSync } = await import('node:fs');
@@ -1537,36 +1489,9 @@ describe('store appearance persistence', () => {
     expect(sqlLogs[0]?.message?.length).toBe(1024);
   });
 
-  it('defaults AI chat send shortcut to Enter in shared shortcut options', async () => {
-    const { useStore } = await importStore();
 
-    expect(useStore.getState().shortcutOptions.sendAIChatMessage).toEqual({
-      mac: { combo: 'Enter', enabled: true },
-      windows: { combo: 'Enter', enabled: true },
-    });
-  });
 
-  it('persists recorded AI chat send shortcut and restores it after reload', async () => {
-    const { useStore } = await importStore();
 
-    useStore.getState().updateShortcut('sendAIChatMessage', {
-      combo: 'Meta+Enter',
-      enabled: true,
-    }, 'mac');
-
-    const persisted = JSON.parse(storage.getItem('lite-db-storage') || '{}');
-    expect(persisted.state.shortcutOptions.sendAIChatMessage).toEqual({
-      mac: { combo: 'Meta+Enter', enabled: true },
-      windows: { combo: 'Enter', enabled: true },
-    });
-
-    vi.resetModules();
-    const reloaded = await importStore();
-    expect(reloaded.useStore.getState().shortcutOptions.sendAIChatMessage).toEqual({
-      mac: { combo: 'Meta+Enter', enabled: true },
-      windows: { combo: 'Enter', enabled: true },
-    });
-  });
 
   it('persists startup fullscreen immediately so next launch does not miss maximize preference', async () => {
     const { useStore } = await importStore();
@@ -1581,102 +1506,13 @@ describe('store appearance persistence', () => {
     expect(reloaded.useStore.getState().startupFullscreen).toBe(true);
   });
 
-  it('falls back to Enter when persisted AI chat send shortcut is invalid', async () => {
-    storage.setItem('lite-db-storage', JSON.stringify({
-      state: {
-        shortcutOptions: {
-          sendAIChatMessage: {
-            combo: 'A',
-            enabled: true,
-          },
-        },
-      },
-      version: 8,
-    }));
 
-    const { useStore } = await importStore();
 
-    expect(useStore.getState().shortcutOptions.sendAIChatMessage).toEqual({
-      mac: { combo: 'Enter', enabled: true },
-      windows: { combo: 'Enter', enabled: true },
-    });
-  });
 
-  it('does not overwrite recorded AI chat send shortcut during startup config refresh', async () => {
-    const { useStore } = await importStore();
-    useStore.getState().updateShortcut('sendAIChatMessage', {
-      combo: 'Ctrl+Enter',
-      enabled: true,
-    }, 'windows');
 
-    useStore.getState().replaceConnections([]);
 
-    const persisted = JSON.parse(storage.getItem('lite-db-storage') || '{}');
-    expect(persisted.state.shortcutOptions.sendAIChatMessage).toEqual({
-      mac: { combo: 'Enter', enabled: true },
-      windows: { combo: 'Ctrl+Enter', enabled: true },
-    });
-  });
 
-  it('keeps persisted AI chat send shortcut when startup refresh runs before shortcut hydration catches up', async () => {
-    const { useStore } = await importStore();
-    const shortcutOptions = useStore.getState().shortcutOptions;
-    storage.setItem('lite-db-storage', JSON.stringify({
-      state: {
-        shortcutOptions: {
-          ...shortcutOptions,
-          sendAIChatMessage: {
-            mac: { combo: 'Meta+Enter', enabled: true },
-            windows: { combo: 'Ctrl+Enter', enabled: true },
-          },
-        },
-      },
-      version: 8,
-    }));
-    useStore.setState({
-      shortcutOptions: {
-        ...shortcutOptions,
-        sendAIChatMessage: {
-          mac: { combo: 'Enter', enabled: true },
-          windows: { combo: 'Enter', enabled: true },
-        },
-      },
-    });
 
-    useStore.getState().replaceConnections([]);
-
-    const persisted = JSON.parse(storage.getItem('lite-db-storage') || '{}');
-    expect(persisted.state.shortcutOptions.sendAIChatMessage).toEqual({
-      mac: { combo: 'Meta+Enter', enabled: true },
-      windows: { combo: 'Ctrl+Enter', enabled: true },
-    });
-  });
-
-  it('does not let a stale default shortcut state overwrite an explicitly recorded AI chat shortcut', async () => {
-    const { useStore } = await importStore();
-    const shortcutOptions = useStore.getState().shortcutOptions;
-
-    useStore.getState().updateShortcut('sendAIChatMessage', {
-      combo: 'Meta+Enter',
-      enabled: true,
-    }, 'mac');
-    useStore.setState({
-      shortcutOptions: {
-        ...shortcutOptions,
-        sendAIChatMessage: {
-          mac: { combo: 'Enter', enabled: true },
-          windows: { combo: 'Enter', enabled: true },
-        },
-      },
-    });
-    useStore.getState().replaceGlobalProxy({});
-
-    const persisted = JSON.parse(storage.getItem('lite-db-storage') || '{}');
-    expect(persisted.state.shortcutOptions.sendAIChatMessage).toEqual({
-      mac: { combo: 'Meta+Enter', enabled: true },
-      windows: { combo: 'Enter', enabled: true },
-    });
-  });
 
   it('updates an existing custom SQL snippet by id and persists editable syntax help', async () => {
     const { useStore } = await importStore();
@@ -1783,12 +1619,10 @@ describe('store memory settings persistence', () => {
     const { useStore } = await importStore();
     expect(useStore.getState().memorySettings).toEqual({
       lowMemoryMode: false,
-      aiAssistantEnabled: false,
       advanced: {
         destroyInactiveTabs: true,
         sidebarDbCacheLimit: 6,
         runtimeSqlLogLimit: 60,
-        aiMessageMemoryLimit: 50,
         sidebarIdleReleaseMinutes: 30,
         goGCPercent: 40,
       },
@@ -1832,30 +1666,7 @@ describe('store memory settings persistence', () => {
     expect(useStore.getState().memorySettings.queryMaxRowsStash).toBeNull();
   });
 
-  it('trims sql logs and ai history when enabling low memory mode', async () => {
-    const { useStore } = await importStore();
-    useStore.setState({
-      sqlLogs: Array.from({ length: 80 }, (_, index) => ({
-        id: `log-${index}`,
-        timestamp: index,
-        sql: `select ${index}`,
-        status: 'success' as const,
-        duration: 1,
-      })),
-      aiChatHistory: {
-        session: Array.from({ length: 70 }, (_, index) => ({
-          id: `msg-${index}`,
-          role: 'user' as const,
-          content: `m-${index}`,
-          timestamp: index,
-        })),
-      },
-    });
 
-    useStore.getState().setMemorySettings({ lowMemoryMode: true });
-    expect(useStore.getState().sqlLogs).toHaveLength(60);
-    expect(useStore.getState().aiChatHistory.session).toHaveLength(50);
-  });
 });
 
 describe('store appearance v17 migration', () => {

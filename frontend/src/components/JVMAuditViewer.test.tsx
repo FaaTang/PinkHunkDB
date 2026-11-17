@@ -144,7 +144,6 @@ describe("JVMAuditViewer", () => {
 
   it("wires non-SSR audit wrappers and source tags through existing i18n keys", () => {
     [
-      "AI 辅助",
       "手工",
       "JVMListAuditRecords 后端方法不可用",
       "读取 JVM 审计记录失败",
@@ -154,7 +153,6 @@ describe("JVMAuditViewer", () => {
     });
 
     [
-      "jvm_audit.source.ai_plan",
       "jvm_audit.source.manual",
       "jvm_audit.error.backend_unavailable",
       "jvm_audit.error.load_failed",

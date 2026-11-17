@@ -58,9 +58,6 @@ describe("JVMChangePreviewModal", () => {
         app: {
           App: {},
         },
-        aiservice: {
-          Service: {},
-        },
       },
     });
   });

@@ -104,14 +104,6 @@ const requiredTableOperationKeys = [
   'table_overview.menu.export_html',
 ] as const;
 
-const requiredAIPromptKeys = [
-  'sidebar.message.ai_table_context_missing',
-  'sidebar.ai_prompt.explain.intro',
-  'sidebar.ai_prompt.explain.detail',
-  'sidebar.ai_prompt.query.intro',
-  'sidebar.ai_prompt.query.detail',
-] as const;
-
 const requiredRollupKeys = [
   'sidebar.v2_table_menu.new_rollup',
 ] as const;
@@ -252,39 +244,6 @@ describe('TableOverview i18n', () => {
   it('keeps table operation catalog keys in all supported languages with matching placeholders', () => {
     const zhCnCatalog = catalogs['zh-CN'];
     requiredTableOperationKeys.forEach(key => {
-      expect(zhCnCatalog, `zh-CN:${key}`).toHaveProperty(key);
-      const expectedPlaceholders = placeholdersOf(zhCnCatalog[key]);
-      catalogFiles.forEach(language => {
-        expect(catalogs[language], `${language}:${key}`).toHaveProperty(key);
-        expect(placeholdersOf(catalogs[language][key]), `${language}:${key}`).toEqual(expectedPlaceholders);
-      });
-    });
-  });
-
-  it('localizes AI table prompt shells while keeping table references and DDL raw', () => {
-    [
-      '当前表缺少连接上下文，无法发送给 AI',
-      '请解释数据表 ${dbName}.${tableName} 的结构和业务含义。',
-      '重点说明字段含义、主键/索引、潜在关联关系、典型查询场景和风险点。',
-      '请基于数据表 ${dbName}.${tableName} 生成 3 条常用查询 SQL。',
-      '要求包含：数据预览查询、按关键字段过滤查询、一个聚合或统计查询。',
-    ].forEach(text => {
-      expect(aiPromptSource).not.toContain(text);
-    });
-
-    requiredAIPromptKeys.forEach(key => {
-      expect(aiPromptSource).toContain(`t('${key}'`);
-    });
-
-    expect(aiPromptSource).toContain('DBShowCreateTable');
-    expect(aiPromptSource).toContain('const tableRef = `${dbName}.${tableName}`;');
-    expect(aiPromptSource).toContain('ddl ? `\\n\\`\\`\\`sql');
-    expect(aiPromptSource).toContain('${ddl}');
-  });
-
-  it('keeps reused AI prompt keys in all supported languages with matching placeholders', () => {
-    const zhCnCatalog = catalogs['zh-CN'];
-    requiredAIPromptKeys.forEach(key => {
       expect(zhCnCatalog, `zh-CN:${key}`).toHaveProperty(key);
       const expectedPlaceholders = placeholdersOf(zhCnCatalog[key]);
       catalogFiles.forEach(language => {

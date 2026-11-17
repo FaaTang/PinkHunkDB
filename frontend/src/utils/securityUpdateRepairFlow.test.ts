@@ -96,15 +96,10 @@ describe('securityUpdateRepairFlow', () => {
     expect(source).toContain('security_update.repair.warning.connection_not_found');
   });
 
-  it('maps proxy, ai and retry actions to the expected repair entry', () => {
+  it('maps proxy and retry actions to the expected repair entry', () => {
     expect(resolveSecurityUpdateRepairEntry({ id: 'proxy', action: 'open_proxy_settings' }, [])).toEqual({
       type: 'proxy',
       repairSource: 'proxy',
-    });
-    expect(resolveSecurityUpdateRepairEntry({ id: 'ai', action: 'open_ai_settings', refId: 'provider-1' }, [])).toEqual({
-      type: 'ai',
-      providerId: 'provider-1',
-      repairSource: 'ai',
     });
     expect(resolveSecurityUpdateRepairEntry({ id: 'retry', action: 'retry_update' }, [])).toEqual({
       type: 'retry',
@@ -158,14 +153,12 @@ describe('securityUpdateRepairFlow', () => {
   it('reopens security update details after closing a repair entry opened from that page', () => {
     expect(shouldReopenSecurityUpdateDetails('connection')).toBe(true);
     expect(shouldReopenSecurityUpdateDetails('proxy')).toBe(true);
-    expect(shouldReopenSecurityUpdateDetails('ai')).toBe(true);
     expect(shouldReopenSecurityUpdateDetails(null)).toBe(false);
   });
 
   it('retries the current round automatically after saving a connection from the repair flow', () => {
     expect(shouldRetrySecurityUpdateAfterRepairSave('connection')).toBe(true);
     expect(shouldRetrySecurityUpdateAfterRepairSave('proxy')).toBe(false);
-    expect(shouldRetrySecurityUpdateAfterRepairSave('ai')).toBe(false);
     expect(shouldRetrySecurityUpdateAfterRepairSave(null)).toBe(false);
   });
 

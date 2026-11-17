@@ -33,7 +33,7 @@ export default defineConfig({
         // 拆分大体积三方依赖到独立 chunk，避免主 bundle 过大
         // reactflow + dagre 约 130KB gzipped，单独成 chunk 可按需加载
         // recharts 用于诊断面板统计条，与执行计划图无强依赖，单独 chunk
-        // AI 相关模块（mermaid、react-markdown、AI 面板）按需加载到独立 chunk
+        // markdown 相关模块按需加载到独立 chunk
         manualChunks(id) {
           if (id.includes('node_modules/reactflow')) {
             return 'reactflow';
@@ -48,14 +48,7 @@ export default defineConfig({
             id.includes('node_modules/mermaid')
             || id.includes('node_modules/react-markdown')
           ) {
-            return 'ai-vendor';
-          }
-          if (
-            id.includes('/src/components/ai/')
-            || id.includes('/src/components/AIChatPanel')
-            || id.includes('/src/components/AISettingsModal')
-          ) {
-            return 'ai-panel';
+            return 'markdown-vendor';
           }
         },
       },

@@ -5,7 +5,6 @@ import {
   EyeOutlined,
   FormatPainterOutlined,
   PlayCircleOutlined,
-  RobotOutlined,
   SaveOutlined,
   SettingOutlined,
   StopOutlined,
@@ -58,7 +57,6 @@ type QueryEditorToolbarProps = {
   onQuickSave: () => void;
   onFormat: () => void;
   onToggleResultPanelVisibility: () => void;
-  onAIAction: (action: "generate" | "explain" | "optimize" | "schema") => void;
 };
 
 const QueryEditorToolbar: React.FC<QueryEditorToolbarProps> = ({
@@ -94,7 +92,6 @@ const QueryEditorToolbar: React.FC<QueryEditorToolbarProps> = ({
   onQuickSave,
   onFormat,
   onToggleResultPanelVisibility,
-  onAIAction,
 }) => {
   const i18n = useOptionalI18n();
   const t = i18n?.t ?? defaultTranslate;
@@ -119,33 +116,6 @@ const QueryEditorToolbar: React.FC<QueryEditorToolbarProps> = ({
       : isResultPanelVisible
         ? t("query_editor.action.hide_results_panel")
         : t("query_editor.action.show_results_panel");
-  const aiMenuItems: MenuProps["items"] = [
-    {
-      key: "ai-generate",
-      label: t("query_editor.action.ai_generate_sql_menu"),
-      icon: <RobotOutlined />,
-      onClick: () => onAIAction("generate"),
-    },
-    {
-      key: "ai-explain",
-      label: t("query_editor.action.ai_explain_sql_menu"),
-      icon: <RobotOutlined />,
-      onClick: () => onAIAction("explain"),
-    },
-    {
-      key: "ai-optimize",
-      label: t("query_editor.action.ai_optimize_sql_menu"),
-      icon: <RobotOutlined />,
-      onClick: () => onAIAction("optimize"),
-    },
-    { type: "divider" as const },
-    {
-      key: "ai-schema",
-      label: t("query_editor.action.ai_schema_analysis"),
-      icon: <RobotOutlined />,
-      onClick: () => onAIAction("schema"),
-    },
-  ];
   const moreMenuItems: MenuProps["items"] = [
         ...baseMoreMenuItems,
         ...(baseMoreMenuItems.length > 0 ? [{ type: "divider" as const }] : []),
@@ -280,19 +250,6 @@ const QueryEditorToolbar: React.FC<QueryEditorToolbarProps> = ({
             {t("query_editor.action.save")}
           </Button>
         </Tooltip>
-        <Dropdown
-          menu={{ items: aiMenuItems }}
-          placement="bottomRight"
-          trigger={["click"]}
-        >
-          <Button
-            className={"gn-v2-query-toolbar-ai-action"}
-            icon={<RobotOutlined />}
-            style={{ color: "#818cf8" }}
-          >
-            AI
-          </Button>
-        </Dropdown>
         <Dropdown
           menu={{ items: moreMenuItems }}
           placement="bottomRight"

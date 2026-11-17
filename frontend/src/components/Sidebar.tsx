@@ -189,7 +189,6 @@ import {
   resolveEffectiveAppearanceValues,
   resolveMemoryPolicy,
   resolveSidebarDbCacheLimit,
-  shouldLoadAIAssistant,
 } from '../utils/memoryPolicy';
 import MessagePublishModal from './MessagePublishModal';
 import {
@@ -418,7 +417,6 @@ const Sidebar: React.FC<{
   onEditConnection?: (conn: SavedConnection) => void;
   onOpenTools?: () => void;
   onOpenSettings?: () => void;
-  onToggleAI?: () => void;
   onToggleLogPanel?: () => void;
   sqlLogCount?: number;
   onFocusCommandSearch?: () => void;
@@ -427,7 +425,6 @@ const Sidebar: React.FC<{
   onEditConnection,
   onOpenTools,
   onOpenSettings,
-  onToggleAI,
   onToggleLogPanel,
   sqlLogCount = 0,
   onFocusCommandSearch,
@@ -471,8 +468,6 @@ const Sidebar: React.FC<{
   const shortcutOptions = useStore(state => state.shortcutOptions);
   const languagePreference = useStore(state => state.languagePreference);
   const setAppearance = useStore(state => state.setAppearance);
-  const setAIPanelVisible = useStore(state => state.setAIPanelVisible);
-  const addAIContext = useStore(state => state.addAIContext);
   void languagePreference;
   const darkMode = useResolvedDarkMode();
   const resolvedAppearance = resolveEffectiveAppearanceValues(memorySettings, appearance);
@@ -492,9 +487,7 @@ const Sidebar: React.FC<{
   const memoryPolicy = useMemo(
     () => resolveMemoryPolicy(memorySettings, appearance),
     [appearance, memorySettings],
-  );
-  const aiAssistantEnabled = shouldLoadAIAssistant(memoryPolicy);
-  const sidebarDbCacheLimit = resolveSidebarDbCacheLimit(memoryPolicy);
+  );  const sidebarDbCacheLimit = resolveSidebarDbCacheLimit(memoryPolicy);
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
   const activeTab = useMemo(() => tabs.find(tab => tab.id === activeTabId) || null, [tabs, activeTabId]);
 
@@ -2106,7 +2099,6 @@ const Sidebar: React.FC<{
       handleCopyTableAsInsert,
       openTableDdlInDesigner,
       openTableInERView,
-      injectTablePromptToAI,
       handleCreateDatabase,
       openCreateSchemaModal,
       handleCreateSchema,
@@ -2192,8 +2184,6 @@ const Sidebar: React.FC<{
       openDesign,
       onDoubleClick,
       runExportWithProgress,
-      setAIPanelVisible,
-      addAIContext,
   });
 
 
@@ -2263,7 +2253,6 @@ const Sidebar: React.FC<{
       openCreateStarRocksRollup,
       handleExport,
       openExportDialog,
-      injectTablePromptToAI,
       handleTableDataDangerAction,
       handleDeleteTable,
       openCreateSchemaModal,
@@ -2284,11 +2273,9 @@ const Sidebar: React.FC<{
       searchScopePopoverContent,
       displayTreeData,
       v2CommandSearchObjectMode,
-      v2CommandSearchAiMode,
       filteredCommandSearchTreeItems,
       filteredCommandSearchActionItems,
       filteredCommandSearchRecentItems,
-      commandSearchAiItem,
       commandSearchFlatItems,
       flattenConnectionNodes,
       activeConnection,
@@ -2325,9 +2312,7 @@ const Sidebar: React.FC<{
       overlayTheme,
       darkMode,
       onCreateConnection,
-      onToggleAI: aiAssistantEnabled ? onToggleAI : undefined,
       onToggleLogPanel,
-      setAIPanelVisible,
       extractObjectName,
   });
   const legacyToolbarButtonColor = darkMode ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.65)';
@@ -2727,9 +2712,7 @@ const Sidebar: React.FC<{
   const v2NewGroupLabel = t('sidebar.action.new_group');
   const v2BatchTablesLabel = t('sidebar.action.batch_tables');
   const v2BatchDatabasesLabel = t('sidebar.action.batch_databases');
-  const v2OpenExternalSqlFileLabel = t('sidebar.sql_file_exec.title');
-  const v2AiAssistantLabel = t('app.sidebar.ai_assistant');
-  const v2ToolsLabel = t('app.sidebar.tools');
+  const v2OpenExternalSqlFileLabel = t('sidebar.sql_file_exec.title');  const v2ToolsLabel = t('app.sidebar.tools');
   const v2SettingsLabel = t('app.sidebar.settings');
   const v2SettingsTooltipLabel = openSettingsShortcutLabel
       ? `${t('app.sidebar.settings')} (${openSettingsShortcutLabel})`
@@ -3487,12 +3470,10 @@ const Sidebar: React.FC<{
     placeholder: v2CommandSearchPlaceholder,
     persistedFilter: v2PersistedSidebarFilter,
     persistentFilterEnabled: v2CommandSearchPersistentFilterEnabled,
-    aiMode: v2CommandSearchAiMode,
     objectMode: v2CommandSearchObjectMode,
     flatItems: commandSearchFlatItems,
     sections: {
       goTo: filteredCommandSearchTreeItems,
-      ai: commandSearchAiItem,
       actions: filteredCommandSearchActionItems,
       recent: filteredCommandSearchRecentItems,
     },
@@ -3518,9 +3499,7 @@ const Sidebar: React.FC<{
       newGroup: v2NewGroupLabel,
       batchTables: v2BatchTablesLabel,
       batchDatabases: v2BatchDatabasesLabel,
-      openExternalSqlFile: v2OpenExternalSqlFileLabel,
-      aiAssistant: v2AiAssistantLabel,
-      sqlExecutionLog: t('app.sidebar.sql_execution_log'),
+      openExternalSqlFile: v2OpenExternalSqlFileLabel,      sqlExecutionLog: t('app.sidebar.sql_execution_log'),
       tools: v2ToolsLabel,
       settings: v2SettingsLabel,
       settingsTooltip: v2SettingsTooltipLabel,
@@ -3532,14 +3511,11 @@ const Sidebar: React.FC<{
       openBatchTableExport: () => openBatchTableExportWorkbench(),
       openBatchDatabaseExport: () => openBatchDatabaseExportWorkbench(),
       openExternalSqlFile: handleOpenSQLFileFromToolbar,
-      toggleAI: aiAssistantEnabled ? (onToggleAI ?? (() => {})) : undefined,
       toggleLogPanel: onToggleLogPanel,
       openTools: onOpenTools ?? (() => {}),
       openSettings: onOpenSettings ?? (() => {}),
       toggleShowLabels: () => setAppearance({ sidebarRailShowLabels: !sidebarRailShowLabels }),
-    },
-    showAIAssistant: aiAssistantEnabled,
-  };
+    },  };
 
   return (
     <div className={'gn-v2-sidebar-redesign'} style={{ display: 'flex', height: '100%', minHeight: 0 }}>

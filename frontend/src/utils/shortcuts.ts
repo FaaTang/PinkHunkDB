@@ -10,7 +10,6 @@ export type ShortcutAction =
   | 'toggleQueryResultsPanel'
   | 'duplicateSelectionOrLine'
   | 'deleteSelectedRows'
-  | 'sendAIChatMessage'
   | 'focusSidebarSearch'
   | 'focusTabSearch'
   | 'jumpColumn'
@@ -21,7 +20,6 @@ export type ShortcutAction =
   | 'switchToPreviousTab'
   | 'closeCurrentTab'
   | 'newConnection'
-  | 'toggleAIPanel'
   | 'toggleLogPanel'
   | 'toggleTheme'
   | 'openShortcutManager'
@@ -47,7 +45,7 @@ export interface ShortcutActionMeta {
   description: string;
   allowInEditable?: boolean;
   allowWithoutModifier?: boolean;
-  scope?: 'global' | 'aiComposer' | 'queryEditor' | 'sidebar' | 'dataGrid';
+  scope?: 'global' | 'queryEditor' | 'sidebar' | 'dataGrid';
   requiredKey?: string;
   disallowShift?: boolean;
   platformOnly?: 'mac';
@@ -116,7 +114,6 @@ export const SHORTCUT_ACTION_ORDER: ShortcutAction[] = [
   'toggleQueryResultsPanel',
   'duplicateSelectionOrLine',
   'deleteSelectedRows',
-  'sendAIChatMessage',
   'focusSidebarSearch',
   'focusTabSearch',
   'jumpColumn',
@@ -127,7 +124,6 @@ export const SHORTCUT_ACTION_ORDER: ShortcutAction[] = [
   'switchToPreviousTab',
   'closeCurrentTab',
   'newConnection',
-  'toggleAIPanel',
   'toggleLogPanel',
   'toggleTheme',
   'diagnoseQuery',
@@ -197,15 +193,6 @@ const SHORTCUT_ACTION_META_DEFINITIONS: Record<ShortcutAction, ShortcutActionMet
     scope: 'queryEditor',
     allowInEditable: true,
   },
-  sendAIChatMessage: {
-    labelKey: 'app.shortcuts.action.sendAIChatMessage.label',
-    descriptionKey: 'app.shortcuts.action.sendAIChatMessage.description',
-    allowInEditable: true,
-    allowWithoutModifier: true,
-    scope: 'aiComposer',
-    requiredKey: 'Enter',
-    disallowShift: true,
-  },
   focusSidebarSearch: {
     labelKey: 'app.shortcuts.action.focusSidebarSearch.label',
     descriptionKey: 'app.shortcuts.action.focusSidebarSearch.description',
@@ -255,11 +242,6 @@ const SHORTCUT_ACTION_META_DEFINITIONS: Record<ShortcutAction, ShortcutActionMet
   newConnection: {
     labelKey: 'app.shortcuts.action.newConnection.label',
     descriptionKey: 'app.shortcuts.action.newConnection.description',
-  },
-  toggleAIPanel: {
-    labelKey: 'app.shortcuts.action.toggleAIPanel.label',
-    descriptionKey: 'app.shortcuts.action.toggleAIPanel.description',
-    allowInEditable: true,
   },
   toggleLogPanel: {
     labelKey: 'app.shortcuts.action.toggleLogPanel.label',
@@ -339,10 +321,6 @@ export const DEFAULT_SHORTCUT_OPTIONS: ShortcutOptions = {
     mac: { combo: 'Ctrl+Y', enabled: true },
     windows: { combo: 'Ctrl+Y', enabled: true },
   },
-  sendAIChatMessage: {
-    mac: { combo: 'Enter', enabled: true },
-    windows: { combo: 'Enter', enabled: true },
-  },
   focusSidebarSearch: {
     mac: { combo: 'Meta+Shift+F', enabled: true },
     windows: { combo: 'Ctrl+Shift+F', enabled: true },
@@ -382,10 +360,6 @@ export const DEFAULT_SHORTCUT_OPTIONS: ShortcutOptions = {
   newConnection: {
     mac: { combo: 'Meta+Shift+N', enabled: true },
     windows: { combo: 'Ctrl+Shift+N', enabled: true },
-  },
-  toggleAIPanel: {
-    mac: { combo: 'Meta+J', enabled: true },
-    windows: { combo: 'Ctrl+J', enabled: true },
   },
   toggleLogPanel: {
     mac: { combo: 'Meta+Shift+H', enabled: true },

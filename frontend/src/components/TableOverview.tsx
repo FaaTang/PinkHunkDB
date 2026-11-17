@@ -253,8 +253,6 @@ const TableOverview: React.FC<TableOverviewProps> = ({ tab }) => {
     const appearance = useStore(state => state.appearance);
     const addTab = useStore(state => state.addTab);
     const setActiveContext = useStore(state => state.setActiveContext);
-    const setAIPanelVisible = useStore(state => state.setAIPanelVisible);
-    const addAIContext = useStore(state => state.addAIContext);
     const pinnedSidebarTables = useStore(state => state.pinnedSidebarTables);
     const setSidebarTablePinned = useStore(state => state.setSidebarTablePinned);
     const darkMode = useResolvedDarkMode();
@@ -723,47 +721,6 @@ const TableOverview: React.FC<TableOverviewProps> = ({ tab }) => {
         });
     }, [addTab, connection, t, tab.dbName]);
 
-    const injectTablePromptToAI = useCallback(async (tableName: string, promptKind: 'explain' | 'query') => {
-        const dbName = tab.dbName || '';
-        if (!connection?.id || !dbName || !tableName) {
-            message.warning(t('sidebar.message.ai_table_context_missing'));
-            return;
-        }
-        const tableRef = `${dbName}.${tableName}`;
-
-        let ddl = '';
-        const config = buildConfig();
-        if (config) {
-            try {
-                const res = await DBShowCreateTable(buildRpcConnectionConfig(config) as any, dbName, tableName);
-                if (res.success) {
-                    ddl = String(res.data || '').trim();
-                    addAIContext(connection.id, { dbName, tableName, ddl });
-                }
-            } catch {
-                // AI 入坣仝坯基于表坝工作，DDL 获坖失败丝阻断打开面板。
-            }
-        }
-
-        const prompt = promptKind === 'explain'
-            ? [
-                t('sidebar.ai_prompt.explain.intro', { table: tableRef }),
-                t('sidebar.ai_prompt.explain.detail'),
-                ddl ? `\n\`\`\`sql\n${ddl}\n\`\`\`` : '',
-            ].filter(Boolean).join('\n')
-            : [
-                t('sidebar.ai_prompt.query.intro', { table: tableRef }),
-                t('sidebar.ai_prompt.query.detail'),
-                ddl ? `\n\`\`\`sql\n${ddl}\n\`\`\`` : '',
-            ].filter(Boolean).join('\n');
-
-        const wasClosed = !useStore.getState().aiPanelVisible;
-        if (wasClosed) setAIPanelVisible(true);
-        setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('gonavi:ai:inject-prompt', { detail: { prompt } }));
-        }, wasClosed ? 350 : 0);
-    }, [addAIContext, buildConfig, connection?.id, setAIPanelVisible, tab.dbName]);
-
     // --- Theme ---
     const cardBg = darkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)';
     const cardHoverBg = darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)';
@@ -875,12 +832,6 @@ const TableOverview: React.FC<TableOverviewProps> = ({ tab }) => {
             case 'export-data':
                 void openExportDialog(tableName, tables.find((item) => item.name === tableName)?.rows);
                 return;
-            case 'ai-explain':
-                void injectTablePromptToAI(tableName, 'explain');
-                return;
-            case 'ai-generate-query':
-                void injectTablePromptToAI(tableName, 'query');
-                return;
             case 'truncate-table':
                 void handleTableDataDangerAction(tableName, 'truncate');
                 return;
@@ -899,7 +850,6 @@ const TableOverview: React.FC<TableOverviewProps> = ({ tab }) => {
         handleRenameTable,
         handleTableDataDangerAction,
         openExportDialog,
-        injectTablePromptToAI,
         loadData,
         openCreateStarRocksRollup,
         openDesign,

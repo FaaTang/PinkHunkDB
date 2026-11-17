@@ -1613,7 +1613,7 @@ func TestJVMApplyChangePersistsAuditSource(t *testing.T) {
 		ResourceID:   "/cache/orders",
 		Action:       "put",
 		Reason:       "repair cache",
-		Source:       "ai-plan",
+		Source:       "manual",
 		Payload: map[string]any{
 			"status": "ready",
 		},
@@ -1632,8 +1632,8 @@ func TestJVMApplyChangePersistsAuditSource(t *testing.T) {
 	}
 	var hasPending, hasApplied bool
 	for _, record := range records {
-		if record.Source != "ai-plan" {
-			t.Fatalf("expected audit source %q, got %#v", "ai-plan", record)
+		if record.Source != "manual" {
+			t.Fatalf("expected audit source %q, got %#v", "manual", record)
 		}
 		switch record.Result {
 		case "pending":

@@ -14,6 +14,18 @@ const walkTests = (dir, out = []) => {
   return out;
 };
 
+const memorySettingsSnippet = `memorySettings: {
+      lowMemoryMode: false,
+      advanced: {
+        destroyInactiveTabs: false,
+        sidebarDbCacheLimit: 12,
+        runtimeSqlLogLimit: 200,
+        sidebarIdleReleaseMinutes: 0,
+        goGCPercent: 100,
+      },
+    },
+`;
+
 let changed = 0;
 for (const file of walkTests(srcDir)) {
   let text = readFileSync(file, 'utf8');
@@ -24,14 +36,6 @@ for (const file of walkTests(srcDir)) {
 
   if (!text.includes('clearTabResultsClearedFlag')) {
     text = text.replace(
-      /(setAIPanelVisible:\s*vi\.fn\(\),?\n)/,
-      '$1  clearTabResultsClearedFlag: vi.fn(),\n',
-    );
-    text = text.replace(
-      /(addAIContext:\s*vi\.fn\(\),?\n)/,
-      '$1    clearTabResultsClearedFlag: vi.fn(),\n',
-    );
-    text = text.replace(
       /(addSqlLog:\s*vi\.fn\(\),?\n\s*sqlLogs:)/,
       '$1\n    clearTabResultsClearedFlag: vi.fn(),',
     );
@@ -40,11 +44,11 @@ for (const file of walkTests(srcDir)) {
   if (text.includes('useStore:') && !text.includes('memorySettings')) {
     text = text.replace(
       /(appearance:\s*mocks\.state\.appearance,?\n)/,
-      "$1    memorySettings: {\n      lowMemoryMode: false,\n      advanced: {\n        destroyInactiveTabs: false,\n        sidebarDbCacheLimit: 12,\n        runtimeSqlLogLimit: 200,\n        aiMessageMemoryLimit: 80,\n        sidebarIdleReleaseMinutes: 0,\n        goGCPercent: 100,\n      },\n    },\n",
+      `$1    ${memorySettingsSnippet}`,
     );
     text = text.replace(
       /(appearance:\s*mocks\.state\.appearance,?\n\s*activeContext:)/,
-      "appearance: mocks.state.appearance,\n    memorySettings: {\n      lowMemoryMode: false,\n      advanced: {\n        destroyInactiveTabs: false,\n        sidebarDbCacheLimit: 12,\n        runtimeSqlLogLimit: 200,\n        aiMessageMemoryLimit: 80,\n        sidebarIdleReleaseMinutes: 0,\n        goGCPercent: 100,\n      },\n    },\n    activeContext:",
+      `appearance: mocks.state.appearance,\n    ${memorySettingsSnippet}    activeContext:`,
     );
   }
 

@@ -7,7 +7,6 @@ import {
   bootstrapSecureConfig,
   finalizeSecurityUpdateStatus,
   mergeSecurityUpdateStatusWithLegacySource,
-  prepareSecureConfigForExternalMCP,
   startSecurityUpdateFromBootstrap,
 } from './secureConfigBootstrap';
 import { stripLegacyPersistedConnectionById } from './legacyConnectionStorage';
@@ -265,15 +264,14 @@ describe('secureConfigBootstrap', () => {
           summary: { total: 1, updated: 0, pending: 1, skipped: 0, failed: 0 },
           issues: [
             {
-              id: 'ai-provider-openai-main',
-              scope: 'ai_provider',
-              refId: 'openai-main',
-              title: 'OpenAI',
+              id: 'system-pending-1',
+              scope: 'system',
+              title: 'System check',
               severity: 'medium',
               status: 'pending',
               reasonCode: 'secret_missing',
-              action: 'open_ai_settings',
-              message: 'AI 提供商配置仍需完成安全更新',
+              action: 'view_details',
+              message: 'System configuration still needs a security update',
             },
           ],
         }),
@@ -289,7 +287,7 @@ describe('secureConfigBootstrap', () => {
       failed: 0,
     });
     expect(result.status.issues).toEqual(expect.arrayContaining([
-      expect.objectContaining({ scope: 'ai_provider', refId: 'openai-main' }),
+      expect.objectContaining({ scope: 'system', id: 'system-pending-1' }),
       expect.objectContaining({ scope: 'connection', refId: 'legacy-1' }),
       expect.objectContaining({ scope: 'global_proxy' }),
     ]));
@@ -349,7 +347,7 @@ describe('secureConfigBootstrap', () => {
   it('merges legacy pending items into needs_attention status without overwriting backend system issues', () => {
     const status = mergeSecurityUpdateStatusWithLegacySource({
       overallStatus: 'needs_attention',
-      summary: { total: 2, updated: 1, pending: 0, skipped: 0, failed: 1 },
+      summary: { total: 1, updated: 0, pending: 0, skipped: 0, failed: 1 },
       issues: [
         {
           id: 'system-partial-failure',
@@ -361,30 +359,19 @@ describe('secureConfigBootstrap', () => {
           action: 'view_details',
           message: '部分项目迁移失败，需要人工处理。',
         },
-        {
-          id: 'ai-provider-openai-main',
-          scope: 'ai_provider',
-          refId: 'openai-main',
-          title: 'OpenAI',
-          severity: 'medium',
-          status: 'updated',
-          action: 'open_ai_settings',
-          message: 'AI 提供商配置已完成安全更新。',
-        },
       ],
     }, legacyPayload);
 
     expect(status.overallStatus).toBe('needs_attention');
     expect(status.summary).toEqual({
-      total: 4,
-      updated: 1,
+      total: 3,
+      updated: 0,
       pending: 2,
       skipped: 0,
       failed: 1,
     });
     expect(status.issues).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: 'system-partial-failure', scope: 'system' }),
-      expect.objectContaining({ id: 'ai-provider-openai-main', scope: 'ai_provider', refId: 'openai-main' }),
       expect.objectContaining({ id: 'legacy-connection-legacy-1', scope: 'connection', refId: 'legacy-1' }),
       expect.objectContaining({ id: 'legacy-global-proxy-default', scope: 'global_proxy' }),
     ]));
@@ -394,32 +381,31 @@ describe('secureConfigBootstrap', () => {
     const status = mergeSecurityUpdateStatusWithLegacySource({
       migrationId: 'migration-active-1',
       overallStatus: 'needs_attention',
-      summary: { total: 3, updated: 2, pending: 1, skipped: 0, failed: 0 },
+      summary: { total: 1, updated: 0, pending: 1, skipped: 0, failed: 0 },
       issues: [
         {
-          id: 'ai-provider-openai-main',
-          scope: 'ai_provider',
-          refId: 'openai-main',
-          title: 'OpenAI',
+          id: 'system-needs-attention',
+          scope: 'system',
+          title: 'System',
           severity: 'medium',
           status: 'needs_attention',
           reasonCode: 'secret_missing',
-          action: 'open_ai_settings',
-          message: 'AI 提供商配置需要补充后才能完成安全更新。',
+          action: 'view_details',
+          message: 'System configuration needs attention to finish the security update.',
         },
       ],
     }, legacyPayload);
 
     expect(status.overallStatus).toBe('needs_attention');
     expect(status.summary).toEqual({
-      total: 3,
-      updated: 2,
+      total: 1,
+      updated: 0,
       pending: 1,
       skipped: 0,
       failed: 0,
     });
     expect(status.issues).toEqual([
-      expect.objectContaining({ id: 'ai-provider-openai-main', scope: 'ai_provider', refId: 'openai-main' }),
+      expect.objectContaining({ id: 'system-needs-attention', scope: 'system' }),
     ]);
   });
 
@@ -533,63 +519,7 @@ describe('secureConfigBootstrap', () => {
     expect(args.storage.getItem(LEGACY_PERSIST_KEY)).toContain('"password":"secret"');
   });
 
-  it('prepares secure backend connections before external MCP use', async () => {
-    const args = createBaseArgs();
-    const StartSecurityUpdate = vi.fn().mockResolvedValue({
-      overallStatus: 'completed',
-      summary: { total: 2, updated: 2, pending: 0, skipped: 0, failed: 0 },
-      issues: [],
-    });
-
-    const result = await prepareSecureConfigForExternalMCP({
-      ...args,
-      backend: {
-        StartSecurityUpdate,
-        GetSavedConnections: vi.fn().mockResolvedValue([
-          {
-            id: 'legacy-1',
-            name: 'Legacy',
-            config: {
-              id: 'legacy-1',
-              type: 'postgres',
-              host: 'db.local',
-              port: 5432,
-              user: 'postgres',
-            },
-            hasPrimaryPassword: true,
-          },
-        ]),
-      },
-    });
-
-    expect(result.attempted).toBe(true);
-    expect(result.error).toBeNull();
-    expect(result.status?.overallStatus).toBe('completed');
-    expect(StartSecurityUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      rawPayload: legacyPayload,
-    }));
-    expect(args.storage.getItem(LEGACY_PERSIST_KEY)).not.toContain('"password":"secret"');
-  });
-
-  it('skips external MCP preparation when no legacy connection source exists', async () => {
-    const storage = createMemoryStorage();
-    const StartSecurityUpdate = vi.fn();
-    const result = await prepareSecureConfigForExternalMCP({
-      storage,
-      replaceConnections: vi.fn(),
-      replaceGlobalProxy: vi.fn(),
-      backend: {
-        StartSecurityUpdate,
-      },
-    });
-
-    expect(result.attempted).toBe(false);
-    expect(result.status).toBeNull();
-    expect(result.error).toBeNull();
-    expect(StartSecurityUpdate).not.toHaveBeenCalled();
-  });
-
-  it('starts security update even when rawPayload is empty but backend supports AI-only update', async () => {
+  it('starts security update even when rawPayload is empty', async () => {
     const storage = createMemoryStorage();
     const replaceConnections = vi.fn();
     const replaceGlobalProxy = vi.fn();

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Input, Button, Switch, Tooltip } from 'antd';
-import { SearchOutlined, ReloadOutlined, TableOutlined, RobotOutlined } from '@ant-design/icons';
+import { SearchOutlined, ReloadOutlined, TableOutlined } from '@ant-design/icons';
 import { noAutoCapInputProps } from '../../utils/inputAutoCap';
 import { t } from '../../i18n';
 
@@ -29,12 +29,10 @@ export interface SidebarSearchPanelProps<TItem extends V2CommandSearchItemLike =
   placeholder: string;
   persistedFilter: string;
   persistentFilterEnabled: boolean;
-  aiMode: boolean;
   objectMode: boolean;
   flatItems: TItem[];
   sections: {
     goTo: TItem[];
-    ai: TItem[];
     actions: TItem[];
     recent: TItem[];
   };
@@ -58,7 +56,6 @@ const SidebarSearchPanel = <TItem extends V2CommandSearchItemLike>({
   placeholder,
   persistedFilter,
   persistentFilterEnabled,
-  aiMode,
   objectMode,
   flatItems,
   sections,
@@ -67,11 +64,9 @@ const SidebarSearchPanel = <TItem extends V2CommandSearchItemLike>({
 }: SidebarSearchPanelProps<TItem>) => {
   if (!isOpen) return null;
 
-  const emptyCopy = aiMode
-    ? t('sidebar.command_search.empty.ai')
-    : objectMode
-      ? t('sidebar.command_search.empty.object')
-      : t('sidebar.command_search.empty.default');
+  const emptyCopy = objectMode
+    ? t('sidebar.command_search.empty.object')
+    : t('sidebar.command_search.empty.default');
 
   const renderRow = (item: TItem, active: boolean) => (
     <button
@@ -146,7 +141,6 @@ const SidebarSearchPanel = <TItem extends V2CommandSearchItemLike>({
         </div>
         <div className="gn-v2-command-list">
           {renderSection(t('sidebar.command_search.section.goto'), sections.goTo)}
-          {renderSection(t('sidebar.command_search.section.ai'), sections.ai)}
           {renderSection(t('sidebar.command_search.section.actions'), sections.actions)}
           {renderSection(t('sidebar.command_search.section.recent'), sections.recent)}
           {flatItems.length === 0 ? (
@@ -156,9 +150,7 @@ const SidebarSearchPanel = <TItem extends V2CommandSearchItemLike>({
         <div className="gn-v2-command-footer">
           <span><kbd>↑</kbd><kbd>↓</kbd>{t('sidebar.command_search.footer.navigate')}</span>
           <span><kbd>↵</kbd>{t('sidebar.command_search.footer.select')}</span>
-          <span><TableOutlined /> <kbd>@</kbd>{t('sidebar.command_search.footer.object_only')}</span>
-          <span><RobotOutlined /> <kbd>?</kbd>{t('sidebar.command_search.footer.ask_ai')}</span>
-        </div>
+          <span><TableOutlined /> <kbd>@</kbd>{t('sidebar.command_search.footer.object_only')}</span>        </div>
       </div>
     </div>
   );

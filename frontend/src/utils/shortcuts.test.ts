@@ -134,7 +134,6 @@ describe('shortcut localization', () => {
       expect(SHORTCUT_ACTION_META.saveQuery.description).toBe('Save the current query tab; unnamed queries open the save dialog');
       expect(SHORTCUT_ACTION_META.toggleQueryResultsPanel.label).toBe('Toggle Results Panel');
       expect(SHORTCUT_ACTION_META.toggleQueryResultsPanel.description).toBe('Show or hide the results area below the query editor');
-      expect(SHORTCUT_ACTION_META.sendAIChatMessage.description).toContain('Shift+Enter');
       expect(describeConflictContext('global')).toBe('Browser');
 
       const browserSave = findReservedConflict('Ctrl+S');
@@ -443,22 +442,7 @@ describe('shortcut defaults', () => {
     });
   });
 
-  it('registers connection and AI panel actions as real shortcuts', () => {
-    expect(DEFAULT_SHORTCUT_OPTIONS.newConnection).toEqual({
-      mac: { combo: 'Meta+Shift+N', enabled: true },
-      windows: { combo: 'Ctrl+Shift+N', enabled: true },
-    });
-    expect(DEFAULT_SHORTCUT_OPTIONS.toggleAIPanel).toEqual({
-      mac: { combo: 'Meta+J', enabled: true },
-      windows: { combo: 'Ctrl+J', enabled: true },
-    });
-    expect(DEFAULT_SHORTCUT_OPTIONS.openSettings).toEqual({
-      mac: { combo: 'Ctrl+Alt+S', enabled: true },
-      windows: { combo: 'Ctrl+Alt+S', enabled: true },
-    });
-    expect(SHORTCUT_ACTION_META.newConnection.label).toBe('新建数据源');
-    expect(SHORTCUT_ACTION_META.toggleAIPanel.label).toBe('打开 AI 数据洞察');
-  });
+
 
   it('migrates legacy single-platform shortcut bindings into both platform slots', () => {
     const options = sanitizeShortcutOptions({
@@ -548,8 +532,6 @@ describe('shortcut defaults', () => {
     const options = sanitizeShortcutOptions({
       sidebarNewQuery: {
         mac: { combo: 'Ctrl+Shift+Q', enabled: false },
-      },
-      sendAIChatMessage: {
         windows: { combo: 'A', enabled: true },
       },
     });
@@ -557,7 +539,6 @@ describe('shortcut defaults', () => {
     expect(options.sidebarNewQuery.mac).toEqual({ combo: 'Ctrl+Shift+Q', enabled: false });
     expect(options.sidebarNewQuery.windows).toEqual({ combo: 'Ctrl+Shift+Q', enabled: true });
     expect(options.saveQuery.windows).toEqual({ combo: 'Ctrl+S', enabled: true });
-    expect(options.sendAIChatMessage.windows).toEqual({ combo: 'Enter', enabled: true });
   });
 
   it('resolves and displays platform-specific bindings', () => {

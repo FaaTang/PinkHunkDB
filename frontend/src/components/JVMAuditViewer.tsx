@@ -143,12 +143,6 @@ const JVMAuditViewer: React.FC<JVMAuditViewerProps> = ({ tab }) => {
         key: "source",
         width: 120,
         render: (value?: string) => {
-          const normalized = String(value || "")
-            .trim()
-            .toLowerCase();
-          if (normalized === "ai-plan") {
-            return <Tag color="purple">{t("jvm_audit.source.ai_plan")}</Tag>;
-          }
           return <Tag>{t("jvm_audit.source.manual")}</Tag>;
         },
       },

@@ -550,14 +550,13 @@ export interface V2CommandSearchTreeIndexEntry {
   objectNode: boolean;
 }
 
-export type V2CommandSearchMode = 'default' | 'object' | 'ai';
+export type V2CommandSearchMode = 'default' | 'object';
 
 export interface V2CommandSearchQuery {
   mode: V2CommandSearchMode;
   rawValue: string;
   keyword: string;
   normalizedKeyword: string;
-  aiPrompt: string;
 }
 
 export const parseV2CommandSearchQuery = (value: unknown): V2CommandSearchQuery => {
@@ -572,18 +571,6 @@ export const parseV2CommandSearchQuery = (value: unknown): V2CommandSearchQuery 
       rawValue,
       keyword,
       normalizedKeyword: keyword.toLowerCase(),
-      aiPrompt: '',
-    };
-  }
-
-  if (firstChar === '?' || firstChar === '？') {
-    const aiPrompt = trimmedValue.slice(1).trim();
-    return {
-      mode: 'ai',
-      rawValue,
-      keyword: aiPrompt,
-      normalizedKeyword: aiPrompt.toLowerCase(),
-      aiPrompt,
     };
   }
 
@@ -592,7 +579,6 @@ export const parseV2CommandSearchQuery = (value: unknown): V2CommandSearchQuery 
     rawValue,
     keyword: trimmedValue,
     normalizedKeyword: trimmedValue.toLowerCase(),
-    aiPrompt: '',
   };
 };
 
@@ -643,7 +629,6 @@ export const filterV2CommandSearchTreeItems = (
   items: V2CommandSearchItem[] | V2CommandSearchTreeIndexEntry[],
   query: V2CommandSearchQuery,
 ): V2CommandSearchItem[] => {
-  if (query.mode === 'ai') return [];
   const index = items.length > 0 && 'item' in items[0]
     ? items as V2CommandSearchTreeIndexEntry[]
     : buildV2CommandSearchTreeIndex(items as V2CommandSearchItem[]);
