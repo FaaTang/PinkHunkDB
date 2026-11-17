@@ -922,7 +922,7 @@ const TabManager: React.FC = React.memo(() => {
               -webkit-user-select: none;
               display: inline-flex;
               align-items: center;
-              gap: 7px;
+              gap: 4px;
               max-width: 100%;
             }
             .main-tabs .tab-dnd-handle {
