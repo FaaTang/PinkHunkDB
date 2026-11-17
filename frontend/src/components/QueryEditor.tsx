@@ -250,6 +250,10 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
   const sqlExecutionChooserDisposeRef = useRef<(() => void) | null>(null);
   const sqlExecutionChooserOpenRef = useRef(false);
   const sqlExecutionChooserCursorSnapshotRef = useRef<{ lineNumber: number; column: number } | null>(null);
+  const sqlExecutionChooserCaretRestoreTokenRef = useRef(0);
+  const pendingSqlExecutionChooserCaretRef = useRef<{ lineNumber: number; column: number } | null>(null);
+  const sqlExecutionChooserCaretRestoreTokenRef = useRef(0);
+  const pendingSqlExecutionChooserCaretRef = useRef<{ lineNumber: number; column: number } | null>(null);
   const runInFlightRef = useRef(false);
   const aiContextMenuActionDisposablesRef = useRef<any[]>([]);
   const toggleQueryResultsPanelActionRef = useRef<any>(null);
@@ -3483,20 +3487,51 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       return true;
   }, []);
 
+  const scheduleEditorCursorRestore = useCallback((snapshot: { lineNumber: number; column: number } | null | undefined) => {
+      if (!snapshot) {
+          return 0;
+      }
+      const nextSnapshot = { lineNumber: snapshot.lineNumber, column: snapshot.column };
+      pendingSqlExecutionChooserCaretRef.current = nextSnapshot;
+      const token = ++sqlExecutionChooserCaretRestoreTokenRef.current;
+      const run = () => {
+          if (token !== sqlExecutionChooserCaretRestoreTokenRef.current) {
+              return;
+          }
+          const editor = editorRef.current;
+          if (!editor) {
+              return;
+          }
+          // 用户已重新获得焦点且位置一致时不再抢回，避免打断继续输入
+          if (editor.hasTextFocus?.()) {
+              const current = normalizeEditorPosition(editor.getPosition?.());
+              if (
+                  current
+                  && current.lineNumber === nextSnapshot.lineNumber
+                  && current.column === nextSnapshot.column
+              ) {
+                  return;
+              }
+          }
+          applyEditorCursorSnapshot(nextSnapshot);
+      };
+      run();
+      // 首次执行会展开结果区并触发 Monaco 布局，焦点丢失常发生在 await 之后的 React commit
+      window.requestAnimationFrame(() => {
+          run();
+          window.requestAnimationFrame(run);
+      });
+      [0, 32, 80, 160, 280].forEach((delayMs) => {
+          window.setTimeout(run, delayMs);
+      });
+      return token;
+  }, [applyEditorCursorSnapshot]);
+
   const restoreSqlExecutionChooserCursor = useCallback(() => {
       const snapshot = sqlExecutionChooserCursorSnapshotRef.current;
       sqlExecutionChooserCursorSnapshotRef.current = null;
-      if (!snapshot) {
-          return;
-      }
-      applyEditorCursorSnapshot(snapshot);
-      // 关闭弹层 / 展开结果面板会抢焦点，补帧把光标钉回原位置
-      window.requestAnimationFrame(() => {
-          applyEditorCursorSnapshot(snapshot);
-          window.requestAnimationFrame(() => applyEditorCursorSnapshot(snapshot));
-      });
-      window.setTimeout(() => applyEditorCursorSnapshot(snapshot), 0);
-  }, [applyEditorCursorSnapshot]);
+      scheduleEditorCursorRestore(snapshot);
+  }, [scheduleEditorCursorRestore]);
 
   const closeSqlExecutionChooser = useCallback(() => {
       const shouldRestoreCursor = sqlExecutionChooserOpenRef.current || !!sqlExecutionChooserDisposeRef.current;
@@ -3505,6 +3540,29 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
           restoreSqlExecutionChooserCursor();
       }
   }, [disposeSqlExecutionChooser, restoreSqlExecutionChooserCursor]);
+
+  useEffect(() => {
+      if (loading) {
+          return;
+      }
+      const snapshot = pendingSqlExecutionChooserCaretRef.current;
+      if (!snapshot) {
+          return;
+      }
+      // loading 结束后结果面板首次展开的 commit 晚于 handleRunWithSql 的 finally，再钉一轮
+      scheduleEditorCursorRestore(snapshot);
+      const clearTimer = window.setTimeout(() => {
+          if (
+              pendingSqlExecutionChooserCaretRef.current?.lineNumber === snapshot.lineNumber
+              && pendingSqlExecutionChooserCaretRef.current?.column === snapshot.column
+          ) {
+              pendingSqlExecutionChooserCaretRef.current = null;
+          }
+      }, 360);
+      return () => {
+          window.clearTimeout(clearTimer);
+      };
+  }, [isResultPanelVisible, loading, scheduleEditorCursorRestore]);
 
   const captureEditorCursorPosition = (event?: React.MouseEvent<HTMLElement>) => {
       event?.preventDefault();
@@ -4474,6 +4532,9 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       }
 
       disposeSqlExecutionChooser();
+      // 取消上一次执行遗留的延迟钉光标，避免和新一轮弹窗抢焦点
+      sqlExecutionChooserCaretRestoreTokenRef.current += 1;
+      pendingSqlExecutionChooserCaretRef.current = null;
       const openingPosition = normalizeEditorPosition(editor.getPosition?.())
           || normalizeEditorPosition(lastEditorCursorPositionRef.current);
       sqlExecutionChooserCursorSnapshotRef.current = openingPosition
@@ -4497,11 +4558,8 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
                   try {
                       await handleRunWithSql(sql);
                   } finally {
-                      // 执行结束后结果区布局变化仍可能吞掉焦点，再钉一次原光标
-                      if (cursorSnapshot) {
-                          applyEditorCursorSnapshot(cursorSnapshot);
-                          window.requestAnimationFrame(() => applyEditorCursorSnapshot(cursorSnapshot));
-                      }
+                      // 执行结束后结果区首次展开 / DataGrid 挂载仍会在后续 commit 抢焦点
+                      scheduleEditorCursorRestore(cursorSnapshot);
                   }
               })();
           },
@@ -4514,7 +4572,6 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       });
       sqlExecutionChooserDisposeRef.current = dispose;
   }, [
-      applyEditorCursorSnapshot,
       closeSqlExecutionChooser,
       connections,
       currentConnectionId,
@@ -4523,6 +4580,7 @@ const QueryEditor: React.FC<{ tab: TabData; isActive?: boolean }> = ({ tab, isAc
       handleRunWithSql,
       loading,
       queryOptions?.askWhatToExecute,
+      scheduleEditorCursorRestore,
   ]);
 
   const handleCancel = async () => {

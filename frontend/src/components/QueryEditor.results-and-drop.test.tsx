@@ -2674,12 +2674,14 @@ storeState.languagePreference = 'en-US';
     const source = readFileSync(new URL('./QueryEditor.tsx', import.meta.url), 'utf8');
 
     expect(source).toContain('const applyEditorCursorSnapshot = useCallback');
+    expect(source).toContain('const scheduleEditorCursorRestore = useCallback');
     expect(source).toContain('editor.setSelection?.({');
     expect(source).toContain('window.requestAnimationFrame(() => {');
-    expect(source).toContain('applyEditorCursorSnapshot(snapshot)');
+    expect(source).toContain('[0, 32, 80, 160, 280].forEach((delayMs) => {');
     expect(source).toContain('const cursorSnapshot = sqlExecutionChooserCursorSnapshotRef.current');
     expect(source).toContain('await handleRunWithSql(sql);');
-    expect(source).toContain('applyEditorCursorSnapshot(cursorSnapshot)');
+    expect(source).toContain('scheduleEditorCursorRestore(cursorSnapshot)');
+    expect(source).toContain('pendingSqlExecutionChooserCaretRef.current');
   });
 
   it('embeds the sql execution log as a result tab instead of a standalone workspace panel in v2', () => {
