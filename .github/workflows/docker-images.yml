@@ -139,7 +139,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-            description: GoNavi MCP Server container image
           - image_name: pinkhunkdb-build-env
             description: GoNavi Linux build environment image
     steps:
