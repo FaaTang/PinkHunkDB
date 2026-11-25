@@ -30,6 +30,10 @@ describe('queryTabClosePrompt', () => {
     expect(source).toContain("event.key === 'ArrowRight'");
     expect(source).toContain("event.key === 'Enter' || event.key === ' '");
     expect(source).toContain("type={index === selected ? 'primary' : 'default'}");
+    expect(source).toContain("width: 'max-content'");
+    expect(source).toContain("className: 'gn-query-tab-close-confirm'");
+    expect(source).toContain("className=\"gn-query-tab-close-actions\"");
+    expect(source).toContain("flexWrap: 'nowrap'");
     QUERY_TAB_CLOSE_PROMPT_I18N_KEYS.forEach((key) => {
       expect(source).toContain(`t('${key}'`);
     });

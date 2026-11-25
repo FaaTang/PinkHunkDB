@@ -197,7 +197,11 @@ const QueryCloseFooter: React.FC<QueryCloseFooterProps> = ({ remainingCount, onC
   }, [actions, onChoice, selected]);
 
   return (
-    <div ref={actionsRef} style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 8 }}>
+    <div
+      ref={actionsRef}
+      className="gn-query-tab-close-actions"
+      style={{ display: 'inline-flex', flexWrap: 'nowrap', gap: 8 }}
+    >
       {actions.map((action, index) => (
         <Button
           key={action.choice}
@@ -244,6 +248,9 @@ const promptDirtyQueryTabChoice = (
     const modal = Modal.confirm({
       title: t('tab_manager.query_close.save_confirm_title'),
       content,
+      // 按按钮文案自适应宽度，保证 Yes/No/Yes to All/No to All/Cancel 尽量同一行
+      width: 'max-content',
+      className: 'gn-query-tab-close-confirm',
       closable: true,
       maskClosable: true,
       footer: () => (

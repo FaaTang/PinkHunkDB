@@ -46,6 +46,26 @@
   cursor: move;
 }
 
+/* 关闭 Query Tab 确认框：按内容撑开宽度，多按钮尽量单行展示 */
+.gn-query-tab-close-confirm {
+  min-width: 416px;
+  max-width: calc(100vw - 32px);
+}
+
+.gn-query-tab-close-confirm .gn-query-tab-close-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+
+@media (max-width: 420px) {
+  .gn-query-tab-close-confirm .gn-query-tab-close-actions {
+    flex-wrap: wrap;
+  }
+}
+
 .gn-modal-resize-handle {
   position: absolute;
   z-index: 20;
